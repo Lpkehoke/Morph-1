@@ -1,0 +1,6 @@
+/build
+/bin
+/.vscode
+/.idea
+__pycache__
+/subprojects
