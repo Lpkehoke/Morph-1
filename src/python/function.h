@@ -45,8 +45,8 @@ struct fn_signature_from_lambda_t
 
 
 /**
- *  Converts python arguments tuple to cpp values and supplies
- *  passes it into the function. 
+ *  Converts python arguments tuple to cpp values and
+ *  passes them to the function. 
  */
 template <typename Fn, typename Return, typename... Args>
 struct function_invocation
@@ -69,7 +69,7 @@ struct function_invocation
     {
         try
         {
-            auto cpp_args = cast_args(py_args, arg_index_t {});
+            auto cpp_args = load_arguments(py_args, arg_index_t {});
 
             Return res = std::apply(fn, std::move(cpp_args));
 
@@ -86,7 +86,7 @@ struct function_invocation
     {
         try
         {
-            auto cpp_args = cast_args(py_args, arg_index_t {});
+            auto cpp_args = load_arguments(py_args, arg_index_t {});
 
             std::apply(fn, std::move(cpp_args));
 
@@ -101,7 +101,7 @@ struct function_invocation
     }
 
     template <std::size_t... idx>
-    static std::tuple<Args...> cast_args(tuple py_args, std::index_sequence<idx...>)
+    static std::tuple<Args...> load_arguments(tuple py_args, std::index_sequence<idx...>)
     {
         return std::tuple<Args...>(type_caster<Args>::load(PyTuple_GetItem(py_args.ptr(), idx))...);
     }
