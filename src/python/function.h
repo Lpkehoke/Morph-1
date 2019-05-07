@@ -55,10 +55,7 @@ struct function_invocation
     struct return_is_none_tag {};
 
     using arg_index_t = std::index_sequence_for<Args...>;
-    using return_is_none_t = typename std::conditional<
-                                std::is_void<Return>::value,
-                                return_is_none_tag<true>,
-                                return_is_none_tag<false>>::type;
+    using return_is_none_t = return_is_none_tag<std::is_void<Return>::value>;
 
     static handle invoke(Fn& fn, tuple py_args)
     {
