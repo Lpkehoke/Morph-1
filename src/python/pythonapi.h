@@ -115,8 +115,17 @@ class tuple : public object
         }
     }
 
-    auto operator [] (const std::size_t& idx) {
-        return PyTuple_GetItem(m_ptr, idx);
+    handle operator [] (const std::size_t idx) const {
+        if (m_ptr != nullptr) {
+            auto ref = PyTuple_GetItem(m_ptr, idx);
+            if (ref != nullptr) {
+                return handle(ref);
+            }
+
+            PyErr_Print();
+        }
+
+        return nullptr;
     }
 };
 

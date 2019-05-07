@@ -105,7 +105,7 @@ struct function_invocation
     template <std::size_t... idx>
     static std::tuple<Args...> load_arguments(tuple py_args, std::index_sequence<idx...>)
     {
-        return std::tuple<Args...>(type_caster<Args>::load( py_args[idx] )...);
+        return std::tuple<Args...>(type_caster<Args>::load(py_args[idx])...);
     }
 };
 
