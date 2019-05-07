@@ -1,5 +1,7 @@
 #pragma once
 
+#include "exceptions.h"
+
 #include <Python.h>
 
 #include <functional>
@@ -114,6 +116,22 @@ class tuple : public object
                 "Trying to initialize py::tuple with a pointer to non-tuple object.");
         }
     }
+
+    handle operator[] (const std::size_t idx) const
+    {
+        if (m_ptr)
+        {
+            auto ref = PyTuple_GetItem(m_ptr, idx);
+            if (ref)
+            {
+                return handle(ref);
+            }
+
+            throw error_already_set();
+        }
+
+        return nullptr;
+    }
 };
 
 class list : public object
@@ -141,7 +159,7 @@ class capsule : public object
                 auto ptr = reinterpret_cast<T*>(PyCapsule_GetPointer(self, nullptr));
                 std::invoke(dtor, ptr);
             });
-        
+
         if (!m_ptr)
         {
             throw std::runtime_error("Failed to allocate capsule.");
