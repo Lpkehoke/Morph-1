@@ -18,9 +18,9 @@ struct type_caster
 
     static T load(handle from)
     {
-        auto& tinfo = detail::internals().type_info_for_<this_t>();
-
-        if (PyObject_TypeCheck(from.ptr(), tinfo.m_py_type.type_ptr()))
+        if (PyObject_TypeCheck(
+                from.ptr(),
+                detail::internals().base_class().type_ptr()))
         {
             auto inst = reinterpret_cast<detail::instance*>(from.ptr());
 

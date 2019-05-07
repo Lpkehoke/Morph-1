@@ -15,8 +15,8 @@ namespace foundation
 
 template <typename K,
           typename V,
-          typename MemoryPolicy = detail::heap_memory_policy,
-          typename Hash = std::hash<K>>
+          typename Hash = std::hash<K>,
+          typename MemoryPolicy = detail::heap_memory_policy>
 class immutable_map
 {
   public:
