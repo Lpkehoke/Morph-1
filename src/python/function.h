@@ -44,14 +44,9 @@ struct fn_signature_from_lambda_t
 };
 
 
-/**
-<<<<<<< HEAD
- *  Converts python arguments tuple to cpp values and
- *  passes them to the function. 
-=======
+/*
  *  Converts python arguments tuple to cpp values and supplies
  *  passes it into the function.
->>>>>>> get item
  */
 template <typename Fn, typename Return, typename... Args>
 struct function_invocation
