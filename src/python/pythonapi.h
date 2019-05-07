@@ -1,5 +1,7 @@
 #pragma once
 
+#include "exceptions.h"
+
 #include <Python.h>
 
 #include <functional>
@@ -115,14 +117,17 @@ class tuple : public object
         }
     }
 
-    handle operator [] (const std::size_t idx) const {
-        if (m_ptr != nullptr) {
+    handle operator [] (const std::size_t idx) const
+    {
+        if (m_ptr != nullptr)
+        {
             auto ref = PyTuple_GetItem(m_ptr, idx);
-            if (ref != nullptr) {
+            if (ref != nullptr)
+            {
                 return handle(ref);
             }
 
-            PyErr_Print();
+            throw error_already_set();
         }
 
         return nullptr;
