@@ -117,12 +117,12 @@ class tuple : public object
         }
     }
 
-    handle operator [] (const std::size_t idx) const
+    handle operator[] (const std::size_t idx) const
     {
-        if (m_ptr != nullptr)
+        if (m_ptr)
         {
             auto ref = PyTuple_GetItem(m_ptr, idx);
-            if (ref != nullptr)
+            if (ref)
             {
                 return handle(ref);
             }
