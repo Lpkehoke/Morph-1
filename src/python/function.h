@@ -45,8 +45,13 @@ struct fn_signature_from_lambda_t
 
 
 /**
+<<<<<<< HEAD
  *  Converts python arguments tuple to cpp values and
  *  passes them to the function. 
+=======
+ *  Converts python arguments tuple to cpp values and supplies
+ *  passes it into the function.
+>>>>>>> get item
  */
 template <typename Fn, typename Return, typename... Args>
 struct function_invocation
@@ -100,7 +105,7 @@ struct function_invocation
     template <std::size_t... idx>
     static std::tuple<Args...> load_arguments(tuple py_args, std::index_sequence<idx...>)
     {
-        return std::tuple<Args...>(type_caster<Args>::load(PyTuple_GetItem(py_args.ptr(), idx))...);
+        return std::tuple<Args...>(type_caster<Args>::load( py_args[idx] )...);
     }
 };
 
@@ -189,7 +194,7 @@ class cpp_function
     void initialize(const char* name, object scope, fn_signature_t<Return, Args...>, Fn&& fn)
     {
         function_record* fn_rec = new function_record();
-        
+
         capsule fn_rec_c(
             fn_rec,
             [](function_record* fn_rec)
@@ -219,7 +224,7 @@ class cpp_function
             // Capture holds a pointer to the functor.
             auto capture_ptr = reinterpret_cast<Fn**>(&fn_rec->m_capture);
             *capture_ptr = new Fn(std::forward<Fn>(fn));
-            
+
             fn_rec->m_dtor = [](void* capture_ptr)
             {
                 auto fn_ptr = reinterpret_cast<Fn**>(capture_ptr);
@@ -254,7 +259,7 @@ class cpp_function
                 PyTuple_Size(py_args));
             return nullptr;
         }
-        
+
         Fn* fn_ptr;
         if (can_embed<Fn>)
         {

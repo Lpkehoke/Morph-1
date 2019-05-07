@@ -114,6 +114,10 @@ class tuple : public object
                 "Trying to initialize py::tuple with a pointer to non-tuple object.");
         }
     }
+
+    auto operator [] (const std::size_t& idx) {
+        return PyTuple_GetItem(m_ptr, idx);
+    }
 };
 
 class list : public object
@@ -141,7 +145,7 @@ class capsule : public object
                 auto ptr = reinterpret_cast<T*>(PyCapsule_GetPointer(self, nullptr));
                 std::invoke(dtor, ptr);
             });
-        
+
         if (!m_ptr)
         {
             throw std::runtime_error("Failed to allocate capsule.");
