@@ -8,23 +8,23 @@ namespace foundation
 class task_queue
 {
   public:
-    using task = std::function<void()>;
+    using task_t = std::function<void()>;
 
     enum class priority_t
     {
-        Low,
-        Normal,
-        High
+        low,
+        normal,
+        high
     };
 
-    task_queue(priority_t priority = priority_t::Normal);
+    task_queue(priority_t priority = priority_t::normal);
     ~task_queue();
 
-    void post(task task);
+    void post(task_t task);
 
   private:
-    struct impl;
-    impl* m_impl;
+    struct impl_t;
+    impl_t* m_impl;
 };
 
 } // namespace foundation
