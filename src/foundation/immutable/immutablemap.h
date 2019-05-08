@@ -12,7 +12,6 @@
 namespace foundation
 {
 
-
 template <typename K,
           typename V,
           typename Hash = std::hash<K>,

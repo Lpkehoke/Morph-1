@@ -215,7 +215,7 @@ struct hamt_node : public refcounted
     
     hamt_node* shallow_copy() const
     {
-        if (std::get_if<inner_t>(&m_impl))
+        if (is_inner())
         {
             hamt_node* dest = make_inner_n();
 

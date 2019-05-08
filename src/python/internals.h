@@ -15,33 +15,43 @@ namespace py
 namespace detail
 {
 
-
-struct type_info
-{
-    type_object             m_py_type;
-    const std::type_info&   m_cpp_type;
-};
-
-
 struct internals_t
 {
     using ptr_t = std::unique_ptr<internals_t>;
-    using type_map_t = std::unordered_map<std::type_index, type_info>;
+    using type_map_t = std::unordered_map<std::type_index, type_object>;
+    using inst_map_t = std::unordered_map<const void*, handle>;
 
     template <typename T>
     void register_type(type_object py_type_obj)
     {
-        auto& tinfo = typeid(T);
-        m_registered_types.emplace(tinfo, type_info {py_type_obj, tinfo});
+        m_registered_types.emplace(typeid(T), py_type_obj);
     }
 
     template <typename T>
-    type_info& type_info_for_()
+    type_object type_info_for_()
     {
         auto itr = m_registered_types.find(typeid(T));
         if (itr == m_registered_types.end())
         {
             throw std::runtime_error("Type is not registered.");
+        }
+
+        return itr->second;
+    }
+
+    template <typename T>
+    void register_instance(T* inst, handle py_obj)
+    {
+        m_registered_instances.emplace(static_cast<void*>(inst), py_obj);
+    }
+
+    template <typename T>
+    handle object_for_(T* inst)
+    {
+        auto itr = m_registered_instances.find(static_cast<void*>(inst));
+        if (itr == m_registered_instances.end())
+        {
+            return handle();
         }
 
         return itr->second;
@@ -58,6 +68,7 @@ struct internals_t
     }
 
     type_map_t  m_registered_types;
+    inst_map_t  m_registered_instances;
     type_object m_base_class;
 };
 

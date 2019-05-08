@@ -1,7 +1,7 @@
 #pragma once
 
 #include "python/pythonapi.h"
-#include "python/typecaster.h"
+#include "python/cast.h"
 
 #include <tuple>
 #include <type_traits>
@@ -70,7 +70,7 @@ struct function_invocation
 
             Return res = std::apply(fn, std::move(cpp_args));
 
-            return type_caster<Return>::cast(std::move(res));
+            return caster<Return>::cast(std::move(res));
         }
         catch (const std::exception& ex)
         {
@@ -100,7 +100,7 @@ struct function_invocation
     template <std::size_t... idx>
     static std::tuple<Args...> load_arguments(tuple py_args, std::index_sequence<idx...>)
     {
-        return std::tuple<Args...>(type_caster<Args>::load(py_args[idx])...);
+        return std::tuple<Args...>(loader<Args>::load(py_args[idx])...);
     }
 };
 
