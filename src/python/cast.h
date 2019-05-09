@@ -75,6 +75,8 @@ struct caster
 
         auto inst = reinterpret_cast<detail::instance*>(res.ptr());
         inst->m_held.emplace(typeid(this_t), static_cast<void*>(src));
+        
+        detail::internals().register_instance(src, res);
 
         return res.release();
     }
@@ -107,6 +109,8 @@ struct caster
 
         auto inst = reinterpret_cast<detail::instance*>(res.ptr());
         inst->m_held.emplace(typeid(this_t), static_cast<void*>(payload));
+
+        detail::internals().register_instance(payload, res);
 
         return res;
     }

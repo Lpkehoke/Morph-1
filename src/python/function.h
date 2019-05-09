@@ -10,9 +10,12 @@
 
 namespace py
 {
+
+template <typename... Args>
+struct init {};
+
 namespace detail
 {
-
 
 template <typename Return, typename... Args>
 struct fn_signature_t {};
@@ -70,7 +73,7 @@ struct function_invocation
 
             Return res = std::apply(fn, std::move(cpp_args));
 
-            return caster<Return>::cast(std::move(res));
+            return caster<Return>::cast(std::forward<Return>(res));
         }
         catch (const std::exception& ex)
         {
@@ -146,7 +149,7 @@ class cpp_function
             name,
             std::move(scope),
             fn_signature_t<Return, Class&, Args...> {},
-            [fn](Class& cls, Args&&... args)
+            [fn](Class& cls, Args&&... args) -> Return
             {
                 return (cls.*fn)(std::forward<Args>(args)...);
             });
@@ -178,6 +181,19 @@ class cpp_function
             [fn](Args&&... args)
             {
                 return (*fn)(std::forward<Args>(args)...);
+            });
+    }
+
+    template <typename Class, typename... Args>
+    cpp_function(init<Class, Args...>, object scope)
+    {
+        initialize(
+            "__init__",
+            std::move(scope),
+            fn_signature_t<void, Class*, Args...> {},
+            [](Class* this_ptr, Args&&... args)
+            {
+                new (this_ptr) Class(std::forward<Args>(args)...);
             });
     }
 

@@ -30,6 +30,13 @@ class class_
         return *this;
     }
 
+    template <typename... Args>
+    class_& def(init<Args...>)
+    {
+        detail::cpp_function(init<Class, Args...> {}, m_type_obj);
+        return *this;
+    }
+
   private:
     module      m_scope;
     type_object m_type_obj;
