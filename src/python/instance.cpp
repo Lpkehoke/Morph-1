@@ -37,6 +37,29 @@ int init_instance(PyObject* self , PyObject*, PyObject*)
 }
 
 
+int traverse_instance(PyObject* self, visitproc visit, void* arg)
+{
+    auto inst = reinterpret_cast<instance*>(self);
+    Py_VISIT(inst->m_dict);
+    return 0;
+}
+
+
+int clear_instance(PyObject* self)
+{
+    auto inst = reinterpret_cast<instance*>(self);
+    Py_CLEAR(inst->m_dict);
+    return 0;
+}
+
+
+void dealloc_instance(PyObject* self)
+{
+    auto type = Py_TYPE(self);
+    type->tp_free(self);
+}
+
+
 PyObject* base_class_get_dict(PyObject* self, void* )
 {
     auto& dict = *_PyObject_GetDictPtr(self);
@@ -95,7 +118,9 @@ type_object make_new_base_class()
 
     type->tp_new = new_instance;
     type->tp_init = init_instance;
-    //type->tp_dealloc = todo;
+    type->tp_dealloc = dealloc_instance;
+    type->tp_traverse = traverse_instance;
+    type->tp_clear = clear_instance;
 
     if (PyType_Ready(type) < 0)
         throw std::runtime_error("Failed to create new base class type.");
@@ -107,8 +132,6 @@ type_object make_new_base_class()
 type_object make_new_type(const char* name, type_object base_class)
 {  
     PyType_Slot spec_slots[] = {
-        {Py_tp_new, reinterpret_cast<void*>(&new_instance)},
-        {Py_tp_init, reinterpret_cast<void*>(&init_instance)},
         {Py_tp_base, reinterpret_cast<void*>(base_class.inc_ref().ptr())},
         {0}
     };
