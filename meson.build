@@ -13,3 +13,4 @@ python_dep = dependency('python3')
 thread_dep = dependency('threads')
 
 subdir('src')
+subdir('docs')
