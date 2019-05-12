@@ -14,6 +14,99 @@
 namespace py
 {
 
+namespace detail
+{
+
+template <typename T>
+struct get_pointer
+{
+    static T* value(T* src)
+    {
+        return src;
+    }
+
+    static T* value(const T& src)
+    {
+        return &const_cast<T&>(src);
+    }
+};
+
+template <typename T, typename = void>
+struct copy_or_move_impl {};
+
+template <typename T>
+struct copy_or_move_impl<T, typename std::enable_if<std::is_copy_constructible<T>::value>::type>
+{
+    static T* value(const T& src)
+    {
+        return new T(src);
+    }
+
+    static T* value(T&& src)
+    {
+        return new T(std::forward<T>(src));
+    }
+};
+
+template <typename T>
+struct copy_or_move_impl<T, typename std::enable_if<!std::is_copy_constructible<T>::value>::type>
+{
+    static T* value(const T& src)
+    {
+        throw std::runtime_error("Can't copy return value. Type is not copy constructible.");
+    }
+
+    static T* value(T&& src)
+    {
+        return new T(std::forward<T>(src));
+    }
+};
+
+template <typename T>
+static T* copy_or_move(const T& src)
+{
+    return copy_or_move_impl<T>::value(static_cast<const T&>(src));
+}
+
+template <typename T>
+static T* copy_or_move(T&& src)
+{
+    return copy_or_move_impl<T>::value(std::forward<T>(src));
+}
+
+template <typename T>
+static T* copy_or_move(T* src)
+{
+    return copy_or_move_impl<T>::value(static_cast<const T&>(*src));
+}
+
+template <typename T>
+static T* move(T& src)
+{
+    return new T(std::move(src));
+}
+
+template <typename T>
+static T* move(T&& src)
+{
+    return new T(std::move(src));
+}
+
+template <typename T>
+static T* move(T* src)
+{
+    return new T(std::move(*src));
+}
+
+} // namespace detail
+
+enum class return_value_policy
+{
+    copy,
+    move,
+    reference
+};
+
 template <typename T>
 struct loader
 {
@@ -47,24 +140,16 @@ struct loader
     }
 };
 
-template <typename T>
+template <typename T, typename = void>
 struct caster
 {
     using this_t = typename std::decay<T>::type;
 
-    static handle cast(T src)
+    static handle cast(T src, return_value_policy ret_val_policy)
     {
-        return cast_impl(std::forward<T>(src));
-    }
+        this_t* this_ptr = detail::get_pointer<this_t>::value(src);
 
-    /**
-     *  Python wrapper will reference existing cpp object.
-     *  Note: deallocation of associated memory will crash the program.
-     */
-    static handle cast_impl(this_t* src)
-    {
-        auto py_obj = detail::internals().object_for_<this_t>(src);
-
+        auto py_obj = detail::internals().object_for_<this_t>(this_ptr);
         if (py_obj)
         {
             return py_obj;
@@ -74,79 +159,36 @@ struct caster
         auto res = type.create_instance();
 
         auto inst = reinterpret_cast<detail::instance*>(res.ptr());
-        inst->m_held.emplace(typeid(this_t), static_cast<void*>(src));
-        
-        detail::internals().register_instance(src, res);
+        this_t* payload = nullptr;
 
-        return res.release();
-    }
-
-    /**
-     *  Python wrapper will reference existing cpp object.
-     *  Note: deallocation of associated memory will crash the program.
-     */
-    static handle cast_impl(this_t& src)
-    {
-        return cast_impl(&src);
-    }
-
-    /** 
-     *  Python wrapper will be initialized using copy constructor.
-     */
-    static handle cast_impl(const this_t& src)
-    {
-        auto py_obj = detail::internals().object_for_<this_t>(&src);
-
-        if (py_obj)
+        switch (ret_val_policy)
         {
-            return py_obj;
+          case return_value_policy::copy:
+            payload = detail::copy_or_move(src);
+            break;
+
+          case return_value_policy::move:
+            payload = detail::move(src);
+            break;
+
+          case return_value_policy::reference:
+            payload = this_ptr;
+            break;
         }
 
-        auto type = detail::internals().type_info_for_<this_t>();
-        auto res = type.create_instance();
-
-        this_t* payload = new this_t(src);
-
-        auto inst = reinterpret_cast<detail::instance*>(res.ptr());
         inst->m_held.emplace(typeid(this_t), static_cast<void*>(payload));
-
-        detail::internals().register_instance(payload, res);
-
-        return res;
-    }
-
-    /**
-     *  Python wrapper will be initialized using move constructor.
-     */
-    static handle cast_impl(this_t&& src)
-    {
-        auto py_obj = detail::internals().object_for_<this_t>(&src);
-
-        if (py_obj)
-        {
-            return py_obj;
-        }
-
-        auto type = detail::internals().type_info_for_<this_t>();
-        auto res = type.create_instance();
-
-        this_t* payload = new this_t(std::move(src));
-
-        auto inst = reinterpret_cast<detail::instance*>(res.ptr());
-        inst->m_held.emplace(typeid(this_t), static_cast<void*>(payload));
-
         detail::internals().register_instance(payload, res);
 
         return res;
     }
 };
 
-template<>
-struct caster<int>
+template<typename T>
+struct caster<T, typename std::enable_if<std::is_integral<T>::value>::type>
 {
-    static handle cast(int src)
+    static handle cast(T src, return_value_policy)
     {
-        return PyLong_FromLong(src);
+        return PyLong_FromLongLong(src);
     }
 };
 

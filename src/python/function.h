@@ -60,12 +60,19 @@ struct function_invocation
     using arg_index_t = std::index_sequence_for<Args...>;
     using return_is_none_t = return_is_none_tag<std::is_void<Return>::value>;
 
-    static handle invoke(Fn& fn, tuple py_args)
+    static handle invoke(
+        Fn&                 fn,
+        tuple               py_args,
+        return_value_policy policy)
     {
-        return invoke(fn, std::move(py_args), return_is_none_t {});
+        return invoke(fn, std::move(py_args), policy, return_is_none_t {});
     }
 
-    static handle invoke(Fn& fn, tuple py_args, return_is_none_tag<false>)
+    static handle invoke(
+        Fn&                 fn, 
+        tuple               py_args,
+        return_value_policy policy,
+        return_is_none_tag<false>)
     {
         try
         {
@@ -73,7 +80,7 @@ struct function_invocation
 
             Return res = std::apply(fn, std::move(cpp_args));
 
-            return caster<Return>::cast(std::forward<Return>(res));
+            return caster<Return>::cast(std::forward<Return>(res), policy);
         }
         catch (const std::exception& ex)
         {
@@ -82,7 +89,11 @@ struct function_invocation
         }
     }
 
-    static handle invoke(Fn& fn, tuple py_args, return_is_none_tag<true>)
+    static handle invoke(
+        Fn&                 fn, 
+        tuple               py_args,
+        return_value_policy policy,
+        return_is_none_tag<true>)
     {
         try
         {
@@ -126,14 +137,16 @@ struct function_record
         }
     }
 
+    return_value_policy m_policy;
+
     // Capture destructor.
-    dtor_t      m_dtor;
+    dtor_t              m_dtor;
 
     // Wrapped cpp function (see cpp_function for details).
-    capture_t   m_capture;
+    capture_t           m_capture;
 
     // Python method definition.
-    PyMethodDef m_def;
+    PyMethodDef         m_def;
 };
 
 class cpp_function
@@ -143,58 +156,77 @@ class cpp_function
      *  Bind non-const class function.
      */
     template <typename Return, typename Class, typename... Args>
-    cpp_function(const char* name, object scope, Return (Class::*fn)(Args...))
+    cpp_function(
+        const char*         name,
+        object              scope,
+        return_value_policy policy,
+        Return (Class::*fn)(Args...))
     {
         initialize(
             name,
             std::move(scope),
-            fn_signature_t<Return, Class&, Args...> {},
+            policy,
             [fn](Class& cls, Args&&... args) -> Return
             {
                 return (cls.*fn)(std::forward<Args>(args)...);
-            });
+            },
+            fn_signature_t<Return, Class&, Args...> {});
     }
 
     /**
      *  Bind lambda object.
      */
     template <typename Fn>
-    cpp_function(const char* name, object scope, Fn&& fn)
+    cpp_function(
+        const char*         name,
+        object              scope,
+        return_value_policy policy,
+        Fn&&                fn)
     {
         initialize(
             name,
             std::move(scope),
-            typename fn_signature_from_lambda_t<Fn>::type {},
-            std::forward<Fn>(fn));
+            policy,
+            std::forward<Fn>(fn),
+            typename fn_signature_from_lambda_t<Fn>::type {});
     }
 
     /**
      *  Bind free function.
      */
     template <typename Return, typename... Args>
-    cpp_function(const char* name, object scope, Return (*fn)(Args...))
+    cpp_function(
+        const char*         name,
+        object              scope,
+        return_value_policy policy,
+        Return (*fn)(Args...))
     {
         initialize(
             name,
             std::move(scope),
-            fn_signature_t<Return, Args...> {},
+            policy,
             [fn](Args&&... args)
             {
                 return (*fn)(std::forward<Args>(args)...);
-            });
+            },
+            fn_signature_t<Return, Args...> {});
     }
 
+    /**
+     *  Bind constructor.
+     */
     template <typename Class, typename... Args>
     cpp_function(init<Class, Args...>, object scope)
     {
         initialize(
             "__init__",
             std::move(scope),
-            fn_signature_t<void, Class*, Args...> {},
+            return_value_policy::copy,
             [](Class* this_ptr, Args&&... args)
             {
                 new (this_ptr) Class(std::forward<Args>(args)...);
-            });
+            },
+            fn_signature_t<void, Class*, Args...> {});
     }
 
   private:
@@ -202,9 +234,15 @@ class cpp_function
     static constexpr bool can_embed = sizeof(Fn) <= sizeof(function_record::capture_t);
 
     template <typename Fn, typename Return, typename... Args>
-    void initialize(const char* name, object scope, fn_signature_t<Return, Args...>, Fn&& fn)
+    void initialize(
+        const char*         name,
+        object              scope,
+        return_value_policy policy,
+        Fn&&                fn,
+        fn_signature_t<Return, Args...>)
     {
         function_record* fn_rec = new function_record();
+        fn_rec->m_policy = policy;
 
         capsule fn_rec_c(
             fn_rec,
@@ -281,7 +319,10 @@ class cpp_function
             fn_ptr = *reinterpret_cast<Fn**>(&fn_rec->m_capture);
         }
 
-        return function_invocation<Fn, Return, Args...>::invoke(*fn_ptr, py_args).ptr();
+        return function_invocation<Fn, Return, Args...>::invoke(
+            *fn_ptr,
+            py_args,
+            fn_rec->m_policy).ptr();
     }
 };
 

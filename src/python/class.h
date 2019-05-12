@@ -24,9 +24,12 @@ class class_
     }
 
     template <typename Func>
-    class_& def(const char* name, Func&& fn)
+    class_& def(
+        const char*         name,
+        Func&&              fn,
+        return_value_policy policy = return_value_policy::copy)
     {
-        detail::cpp_function(name, m_type_obj, std::forward<Func>(fn));
+        detail::cpp_function(name, m_type_obj, policy, std::forward<Func>(fn));
         return *this;
     }
 
