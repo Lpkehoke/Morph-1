@@ -107,7 +107,7 @@ enum class return_value_policy
     reference
 };
 
-template <typename T>
+template <typename T, typename = void>
 struct loader
 {
     using this_t = typename std::decay<T>::type;
@@ -183,6 +183,11 @@ struct caster
     }
 };
 
+
+//
+//  Integral types specialization.
+//
+
 template<typename T>
 struct caster<T, typename std::enable_if<std::is_integral<T>::value>::type>
 {
@@ -192,14 +197,42 @@ struct caster<T, typename std::enable_if<std::is_integral<T>::value>::type>
     }
 };
 
-template<>
-struct loader<int>
+template<typename T>
+struct loader<T, typename std::enable_if<std::is_integral<T>::value>::type>
 {
-    static int load(handle from)
+    static T load(handle from)
     {
         if (PyLong_Check(from.ptr()))
         {
-            return PyLong_AsLong(from.ptr());
+            return static_cast<T>(PyLong_AsLongLong(from.ptr()));
+        }
+
+        throw load_error {};
+    }
+};
+
+
+//
+//  std::string specialization.
+//
+
+template<>
+struct caster<std::string>
+{
+    static handle cast(const std::string& src, return_value_policy)
+    {
+        return PyUnicode_FromString(src.c_str());
+    }
+};
+
+template<>
+struct loader<std::string>
+{
+    static std::string load(handle from)
+    {
+        if (PyUnicode_Check(from.ptr()))
+        {
+            return PyUnicode_AsUTF8(from.ptr());
         }
 
         throw load_error {};

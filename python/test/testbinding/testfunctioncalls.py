@@ -12,6 +12,10 @@ class TestReturnValues(unittest.TestCase):
         res = self.test_return_values.get_one_int()
         self.assertEqual(res, 1)
 
+    def test_return_cpp_string(self):
+        res = self.test_return_values.get_hello_string()
+        self.assertEqual(res, "hello")
+
     def test_return_cpp_nocopyable(self):
         res1 = self.test_return_values.get_nocopyable()
         res2 = self.test_return_values.get_nocopyable()
