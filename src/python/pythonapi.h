@@ -23,6 +23,7 @@ class handle
     handle& dec_ref();
 
     void setattr(const char* name, handle py_obj);
+    handle getattr(const char* name);
 
     bool is(handle other) const;
 
@@ -82,6 +83,8 @@ class type_object : public object
 
     tuple mro();
 
+    // TODO: This is bad. Method assumes the held type is
+    // subtype of cpp wrapper.
     object create_instance();
 };
 

@@ -51,6 +51,29 @@ void handle::setattr(const char* name, handle py_obj)
     {
         PyObject_SetAttrString(m_ptr, name, py_obj.ptr());
     }
+    else
+    {
+        throw std::runtime_error("Trying to set attribute of invalid handle.");
+    }
+}
+
+handle handle::getattr(const char* name)
+{
+    if (m_ptr)
+    {
+        auto res = PyObject_GetAttrString(m_ptr, name);
+
+        if (!res)
+        {
+            throw error_already_set();
+        }
+
+        return res;
+    }
+    else
+    {
+        throw std::runtime_error("Trying to get attribute of invalid handle.");
+    }
 }
 
 bool handle::is(handle other) const
