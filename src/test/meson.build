@@ -10,4 +10,4 @@ morph_test = executable(
     dependencies: [foundation_dep, gtest_dep, thread_dep]
 )
 
-test('morphtest', morph_test)
+test('morphtest', morph_test, timeout: 1000)

@@ -53,8 +53,12 @@ class Morph(ConanFile):
     def build(self):
         self.create_meson_subprojects()
 
+        defs = {
+            "b_coverage": "true"
+        }
+
         meson = Meson(self)
-        meson.configure(build_folder='build')
+        meson.configure(build_folder='build', defs=defs)
         meson.build()
 
     def package(self):
