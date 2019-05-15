@@ -29,7 +29,7 @@ public:
 };
 
 
-TEST(task_queue, post_task)
+TEST(task_queue, test_serial_execution)
 {
     task_queue queue;
     auto cb_mock = std::make_shared<StrictMock<mock_callback>>();
@@ -39,12 +39,13 @@ TEST(task_queue, post_task)
     std::mutex mutex;
     std::condition_variable cv;
 
-    for (auto seed = 1; seed < 10000; ++seed)
+    constexpr auto ntasks = 666;
+    for (auto seed = 1; seed < ntasks; ++seed)
     {
         EXPECT_CALL((*cb_mock.get()), on_data(seed)).Times(1);
     }
 
-    for (auto seed = 1; seed < 10000; ++seed)
+    for (auto seed = 1; seed < ntasks; ++seed)
     {
         queue.post([seed, cb_mock, &previous_seed]()
             {
@@ -54,6 +55,46 @@ TEST(task_queue, post_task)
                 previous_seed.store(seed);
             });
     }
+
+    queue.post([&]()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        ready.store(true);
+        lock.unlock();
+        cv.notify_all();
+    });
+
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(
+        lock,
+        [&ready]
+        {
+            return ready.load();
+        });
+}
+
+TEST(task_queue, test_post_when_queue_is_busy)
+{
+    task_queue queue;
+    auto cb_mock = std::make_shared<StrictMock<mock_callback>>();
+
+    std::atomic<bool> ready(false);
+    std::mutex mutex;
+    std::condition_variable cv;
+
+
+    EXPECT_CALL((*cb_mock.get()), on_data(123)).Times(2);
+
+    queue.post([cb_mock]()
+        {
+            cb_mock->on_data(123);
+            std::this_thread::sleep_for(1000ns);
+        });
+
+    queue.post([cb_mock]()
+        {
+            cb_mock->on_data(123);
+        });
 
     queue.post([&]()
     {
