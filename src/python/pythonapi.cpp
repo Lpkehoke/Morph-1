@@ -18,9 +18,31 @@ handle::handle(PyObject* py_obj)
   : m_ptr(py_obj)
 {}
 
+handle::handle(const handle& other)
+  : m_ptr(other.m_ptr)
+{}
+
+handle::handle(handle&& other)
+  : m_ptr(nullptr)
+{
+    std::swap(m_ptr, other.m_ptr);
+}
+
 PyObject* handle::ptr()
 {
     return m_ptr;
+}
+
+handle& handle::inc_ref()
+{
+    Py_XINCREF(m_ptr);
+    return *this;
+}
+
+handle& handle::dec_ref()
+{
+    Py_XDECREF(m_ptr);
+    return *this;
 }
 
 void handle::setattr(const char* name, handle py_obj)
@@ -29,6 +51,11 @@ void handle::setattr(const char* name, handle py_obj)
     {
         PyObject_SetAttrString(m_ptr, name, py_obj.ptr());
     }
+}
+
+bool handle::is(handle other) const
+{
+    return m_ptr == other.m_ptr;
 }
 
 handle::operator bool() const
@@ -46,7 +73,30 @@ object::object(PyObject* py_obj)
 
 object::object(const object& other)
   : handle(other)
+{
+    inc_ref();
+}
+
+object::object(object&& other)
+  : handle(std::move(other))
 {}
+
+object::~object()
+{
+    dec_ref();
+}
+
+object& object::operator=(const object& other)
+{
+    if (!is(other))
+    {
+        dec_ref();
+        m_ptr = other.m_ptr;
+        inc_ref();
+    }
+
+    return *this;
+}
 
 object& object::inc_ref()
 {
@@ -76,13 +126,42 @@ type_object::type_object()
   : object()
 {}
 
+type_object::type_object(PyObject* py_type_obj)
+  : object(py_type_obj)
+{}
+
 type_object::type_object(PyTypeObject* py_type_obj)
   : object(reinterpret_cast<PyObject*>(py_type_obj))
 {}
 
+type_object::type_object(const type_object& other)
+  : object(other)
+{}
+
+type_object::type_object(type_object&& other)
+  : object(std::move(other))
+{}
+
+type_object& type_object::operator=(const type_object& other)
+{
+    if (!is(other))
+    {
+        dec_ref();
+        m_ptr = other.m_ptr;
+        inc_ref();
+    }
+
+    return *this;
+}
+
 PyTypeObject* type_object::type_ptr()
 {
     return reinterpret_cast<PyTypeObject*>(m_ptr);
+}
+
+tuple type_object::mro()
+{
+    return type_ptr()->tp_mro;
 }
 
 object type_object::create_instance()
@@ -119,6 +198,16 @@ handle tuple::operator[](std::size_t idx) const
     }
 
     return nullptr;
+}
+
+std::size_t tuple::size() const
+{
+    if (m_ptr)
+    {
+        return PyTuple_Size(m_ptr);
+    }
+    
+    throw std::runtime_error("Trying to get size of invalid tuple object.");
 }
 
 } // namespace py

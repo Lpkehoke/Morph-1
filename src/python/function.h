@@ -48,8 +48,8 @@ struct fn_signature_from_lambda_t
 
 
 /*
- *  Converts python arguments tuple to cpp values and supplies
- *  passes it into the function.
+ *  Converts python arguments tuple to cpp values and
+ *  passes them to the function.
  */
 template <typename Fn, typename Return, typename... Args>
 struct function_invocation
@@ -65,7 +65,19 @@ struct function_invocation
         tuple               py_args,
         return_value_policy policy)
     {
-        return invoke(fn, std::move(py_args), policy, return_is_none_t {});
+        try
+        {
+            return invoke(fn, std::move(py_args), policy, return_is_none_t {});
+        }
+        catch (const error_already_set&)
+        {
+            return nullptr;
+        }
+        catch (const std::exception& ex)
+        {
+            PyErr_SetString(PyExc_RuntimeError, ex.what());
+            return nullptr;
+        }
     }
 
     static handle invoke(
@@ -74,19 +86,11 @@ struct function_invocation
         return_value_policy policy,
         return_is_none_tag<false>)
     {
-        try
-        {
-            auto cpp_args = load_arguments(py_args, arg_index_t {});
+        auto cpp_args = load_arguments(py_args, arg_index_t {});
 
-            Return res = std::apply(fn, std::move(cpp_args));
+        Return res = std::apply(fn, std::move(cpp_args));
 
-            return caster<Return>::cast(std::forward<Return>(res), policy);
-        }
-        catch (const std::exception& ex)
-        {
-            PyErr_SetString(PyExc_RuntimeError, ex.what());
-            return nullptr;
-        }
+        return caster<Return>::cast(std::forward<Return>(res), policy);
     }
 
     static handle invoke(
@@ -95,20 +99,12 @@ struct function_invocation
         return_value_policy policy,
         return_is_none_tag<true>)
     {
-        try
-        {
-            auto cpp_args = load_arguments(py_args, arg_index_t {});
+        auto cpp_args = load_arguments(py_args, arg_index_t {});
 
-            std::apply(fn, std::move(cpp_args));
+        std::apply(fn, std::move(cpp_args));
 
-            Py_XINCREF(Py_None);
-            return Py_None;
-        }
-        catch (const std::exception& ex)
-        {
-            PyErr_SetString(PyExc_RuntimeError, ex.what());
-            return nullptr;
-        }
+        Py_XINCREF(Py_None);
+        return Py_None;
     }
 
     template <std::size_t... idx>
@@ -171,6 +167,27 @@ class cpp_function
                 return (cls.*fn)(std::forward<Args>(args)...);
             },
             fn_signature_t<Return, Class&, Args...> {});
+    }
+
+    /**
+     *  Bind const class function.
+     */
+    template <typename Return, typename Class, typename... Args>
+    cpp_function(
+        const char*         name,
+        object              scope,
+        return_value_policy policy,
+        Return (Class::* fn)(Args...) const)
+    {
+        initialize(
+            name,
+            std::move(scope),
+            policy,
+            [fn](const Class& cls, Args&&... args) -> Return
+            {
+                return (cls.*fn)(std::forward<Args>(args)...);
+            },
+            fn_signature_t<Return, const Class&, Args...> {});
     }
 
     /**

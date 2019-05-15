@@ -14,10 +14,17 @@ class handle
   public:
     handle();
     handle(PyObject* py_obj);
+    handle(const handle& other);
+    handle(handle&& other);
 
     PyObject* ptr();
 
+    handle& inc_ref();
+    handle& dec_ref();
+
     void setattr(const char* name, handle py_obj);
+
+    bool is(handle other) const;
 
     operator bool() const;
 
@@ -31,6 +38,10 @@ class object : public handle
     object();
     object(PyObject* py_obj);
     object(const object& other);
+    object(object&& other);
+    ~object();
+
+    object& operator=(const object& other);
 
     object& inc_ref();
     object& dec_ref();
@@ -38,17 +49,6 @@ class object : public handle
     handle release();
 
     operator bool() const;
-};
-
-class type_object : public object
-{
-  public:
-    type_object();
-    type_object(PyTypeObject* py_type_obj);
-    
-    PyTypeObject* type_ptr();
-
-    object create_instance();
 };
 
 class str : public object
@@ -63,6 +63,26 @@ class tuple : public object
     tuple(PyObject* py_obj);
 
     handle operator[](std::size_t idx) const;
+
+    std::size_t size() const;
+};
+
+class type_object : public object
+{
+  public:
+    type_object();
+    type_object(PyObject* py_type_obj);
+    type_object(PyTypeObject* py_type_obj);
+    type_object(const type_object& other);
+    type_object(type_object&& other);
+
+    type_object& operator=(const type_object& other);
+    
+    PyTypeObject* type_ptr();
+
+    tuple mro();
+
+    object create_instance();
 };
 
 class list : public object

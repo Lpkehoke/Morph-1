@@ -2,23 +2,52 @@
 
 #include "python/pythonapi.h"
 
+#include <memory>
 #include <typeinfo>
 #include <unordered_map>
-#include <typeindex>
 
 namespace py
 {
 namespace detail
 {
 
+struct value_and_holder_t
+{
+    using holder_t = std::shared_ptr<void>;
+
+    template <typename T>
+    value_and_holder_t(T* payload, bool is_owner)
+      : m_held_tinfo(&typeid(T))
+      , m_next(nullptr)
+      , m_held(
+          payload,
+          [is_owner](T* ptr)
+          {
+              if (is_owner)
+              {
+                  delete ptr;
+              }
+          })
+    {}
+
+    ~value_and_holder_t()
+    {
+        delete m_next;
+    }
+
+    // Type info for held type (i.e. pointee type).
+    const std::type_info*   m_held_tinfo;
+
+    value_and_holder_t*     m_next;
+    holder_t                m_held;
+};
+
 struct instance
 {
-    using held_t = std::unordered_map<std::type_index, void*>;
-
     PyObject_HEAD
 
-    held_t      m_held;
-    PyObject*   m_dict;
+    value_and_holder_t* m_value_and_holder;
+    PyObject*           m_dict;
 };
 
 

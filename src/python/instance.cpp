@@ -1,6 +1,7 @@
 #include "python/instance.h"
 
 #include "python/pythonapi.h"
+#include "python/internals.h"
 
 #include <typeinfo>
 #include <unordered_map>
@@ -14,7 +15,7 @@ namespace detail
 PyObject* make_new_instance(PyTypeObject* subtype)
 {
     auto inst = reinterpret_cast<instance*>(subtype->tp_alloc(subtype, 0));
-    new (&inst->m_held) instance::held_t();
+    inst->m_value_and_holder = nullptr;
 
     return reinterpret_cast<PyObject*>(inst);
 }
@@ -55,6 +56,15 @@ int clear_instance(PyObject* self)
 
 void dealloc_instance(PyObject* self)
 {
+    auto inst = reinterpret_cast<instance*>(self);
+
+    if (inst->m_value_and_holder)
+    {
+        internals().unregister_instance(inst->m_value_and_holder->m_held.get());
+        delete inst->m_value_and_holder;
+        inst->m_value_and_holder = nullptr;
+    }
+
     auto type = Py_TYPE(self);
     type->tp_free(self);
 }

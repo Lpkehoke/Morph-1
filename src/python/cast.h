@@ -6,6 +6,8 @@
 #include "python/internals.h"
 #include "python/pythonapi.h"
 
+#include <cassert>
+#include <memory>
 #include <string>
 #include <type_traits>
 
@@ -18,18 +20,28 @@ namespace detail
 {
 
 template <typename T>
-struct get_pointer
+typename std::enable_if_t<!std::is_pointer_v<T>, T> match_pointer(T&& src)
 {
-    static T* value(T* src)
-    {
-        return src;
-    }
+    return std::forward<T>(src);
+}
 
-    static T* value(const T& src)
-    {
-        return &const_cast<T&>(src);
-    }
-};
+template <typename T>
+typename std::enable_if_t<!std::is_pointer_v<T>, T> match_pointer(typename std::remove_reference_t<T>* src)
+{
+    return *src;
+}
+
+template <typename T>
+typename std::enable_if_t<std::is_pointer_v<T>, T> match_pointer(typename std::remove_pointer_t<T>& src)
+{
+    return &src;
+}
+
+template <typename T>
+typename std::enable_if_t<std::is_pointer_v<T>, T> match_pointer(T src)
+{
+    return src;
+}
 
 template <typename T, typename = void>
 struct copy_or_move_impl {};
@@ -110,76 +122,123 @@ enum class return_value_policy
 template <typename T, typename = void>
 struct loader
 {
-    using this_t = typename std::decay<T>::type;
+    using this_t = typename std::remove_pointer_t<typename std::decay_t<T>>;
 
     static T load(handle from)
     {
+        this_t* res = load_impl(from);
+        return detail::match_pointer<T>(res);
+    }
+
+    static this_t* load_impl(handle from)
+    {
         if (PyObject_TypeCheck(
                 from.ptr(),
-                detail::internals().base_class().type_ptr()))
+                detail::internals().type_info_for_<this_t>().type_ptr()))
         {
             auto inst = reinterpret_cast<detail::instance*>(from.ptr());
 
-            this_t* this_ptr;
+            if (!inst->m_value_and_holder)
+            {
+                auto tmp = new typename std::aligned_storage<sizeof(this_t), alignof(this_t)>::type();
+                auto this_ptr = reinterpret_cast<this_t*>(tmp);
 
-            auto itr = inst->m_held.find(typeid(this_t));
-            if (itr == inst->m_held.end())
-            {
-                this_ptr = new this_t();
-                inst->m_held.emplace(typeid(this_t), static_cast<void*>(this_ptr));
-            }
-            else
-            {
-                this_ptr = reinterpret_cast<this_t*>(itr->second);
+                inst->m_value_and_holder = new detail::value_and_holder_t(this_ptr, true);
+
+                detail::internals().register_instance(this_ptr, from);
+                return this_ptr;
             }
 
-            return *this_ptr;
+            auto value_and_holder = inst->m_value_and_holder;
+            while (true)
+            {
+                if (value_and_holder->m_held_tinfo->hash_code() == typeid(this_t).hash_code())
+                {
+                    auto this_ptr = reinterpret_cast<this_t*>(value_and_holder->m_held.get());
+                    return this_ptr;
+                }
+
+                if (!value_and_holder->m_next)
+                {
+                    auto tmp = new typename std::aligned_storage<sizeof(this_t), alignof(this_t)>::type();
+                    auto this_ptr = reinterpret_cast<this_t*>(tmp);
+
+                    value_and_holder->m_next = new detail::value_and_holder_t(this_ptr, true);
+                    detail::internals().register_instance(this_ptr, from);
+                    return this_ptr;
+                }
+
+                value_and_holder = value_and_holder->m_next;
+            }
         }
 
-        throw std::logic_error("Not implemented.");
+        throw load_error();
     }
 };
+
 
 template <typename T, typename = void>
 struct caster
 {
-    using this_t = typename std::decay<T>::type;
+    using this_t = typename std::remove_pointer_t<typename std::decay_t<T>>;
 
     static handle cast(T src, return_value_policy ret_val_policy)
     {
-        this_t* this_ptr = detail::get_pointer<this_t>::value(src);
+        this_t* this_ptr = detail::match_pointer<this_t*>(src);
 
         auto py_obj = detail::internals().object_for_<this_t>(this_ptr);
+        auto type = detail::internals().type_info_for_<this_t>();
+
         if (py_obj)
         {
-            return py_obj;
+            assert(PyObject_TypeCheck(py_obj.ptr(), type.type_ptr()));
+            return py_obj.inc_ref();
         }
-
-        auto type = detail::internals().type_info_for_<this_t>();
+        
         auto res = type.create_instance();
 
         auto inst = reinterpret_cast<detail::instance*>(res.ptr());
         this_t* payload = nullptr;
+        bool is_owned = false;
 
         switch (ret_val_policy)
         {
           case return_value_policy::copy:
             payload = detail::copy_or_move(src);
+            is_owned = true;
             break;
 
           case return_value_policy::move:
             payload = detail::move(src);
+            is_owned = true;
             break;
 
           case return_value_policy::reference:
             payload = this_ptr;
             break;
+
+          default:
+            assert(false && "Unhandled return policy.");
         }
 
-        inst->m_held.emplace(typeid(this_t), static_cast<void*>(payload));
+        if (!inst->m_value_and_holder)
+        {
+            inst->m_value_and_holder = new detail::value_and_holder_t(payload, is_owned);
+        }
+        else
+        {
+            auto value_and_holder = inst->m_value_and_holder;
+            while (value_and_holder->m_next)
+            {
+                value_and_holder = value_and_holder->m_next;
+            }
+
+            value_and_holder->m_next = new detail::value_and_holder_t(payload, is_owned);
+        }
+
         detail::internals().register_instance(payload, res);
 
-        return res;
+        return res.release();
     }
 };
 
@@ -233,6 +292,34 @@ struct loader<std::string>
         if (PyUnicode_Check(from.ptr()))
         {
             return PyUnicode_AsUTF8(from.ptr());
+        }
+
+        throw load_error {};
+    }
+};
+
+
+//
+//  bool specialization.
+//
+
+template<>
+struct caster<bool>
+{
+    static handle cast(bool src, return_value_policy)
+    {
+        return PyBool_FromLong(static_cast<long>(src));
+    }
+};
+
+template<>
+struct loader<bool>
+{
+    static bool load(handle from)
+    {
+        if (PyBool_Check(from.ptr()))
+        {
+            return static_cast<bool>(PyLong_AsLong(from.ptr()));
         }
 
         throw load_error {};

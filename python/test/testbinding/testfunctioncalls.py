@@ -1,5 +1,4 @@
 import unittest
-
 import _test as test
 
 
@@ -25,3 +24,26 @@ class TestReturnValues(unittest.TestCase):
         res1 = self.test_return_values.get_nocopyable_ref()
         res2 = self.test_return_values.get_nocopyable_ref()
         self.assertTrue(res1 is res2)
+
+
+class TestParameterValues(unittest.TestCase):
+
+    def setUp(self):
+        self.test_parameter_values = test.TestParameterValues()
+
+    def test_take_cpp_int(self):
+        res = self.test_parameter_values.take_one_int(1)
+        self.assertTrue(res)
+
+    def test_take_cpp_string(self):
+        res = self.test_parameter_values.take_hello_string("hello")
+        self.assertTrue(res)
+
+    def test_take_cpp_nocopyable_ref(self):
+        nc = test.Nocopyable()
+
+        # Sets nc value to "bar"
+        res = self.test_parameter_values.take_nocopyable_ref(nc)
+
+        self.assertTrue(res)
+        self.assertEqual("bar", nc.foo())
