@@ -5,13 +5,13 @@
 #include "python/instance.h"
 #include "python/internals.h"
 #include "python/pythonapi.h"
+#include "python/utils.h"
 
 #include <cassert>
 #include <memory>
 #include <string>
 #include <type_traits>
 
-#include <iostream>
 
 namespace py
 {
@@ -20,92 +20,19 @@ namespace detail
 {
 
 template <typename T>
-typename std::enable_if_t<!std::is_pointer_v<T>, T> match_pointer(T&& src)
+enable_if_copy_constructible<T*> copy(T* src)
 {
-    return std::forward<T>(src);
+    return new T(static_cast<const T&>(*src));
 }
 
 template <typename T>
-typename std::enable_if_t<!std::is_pointer_v<T>, T> match_pointer(typename std::remove_reference_t<T>* src)
+enable_if_not_copy_constructible<T*> copy(T* src)
 {
-    return *src;
+    throw std::runtime_error("Can't copy type with missing copy constructor.");
 }
 
 template <typename T>
-typename std::enable_if_t<std::is_pointer_v<T>, T> match_pointer(typename std::remove_pointer_t<T>& src)
-{
-    return &src;
-}
-
-template <typename T>
-typename std::enable_if_t<std::is_pointer_v<T>, T> match_pointer(T src)
-{
-    return src;
-}
-
-template <typename T, typename = void>
-struct copy_or_move_impl {};
-
-template <typename T>
-struct copy_or_move_impl<T, typename std::enable_if<std::is_copy_constructible<T>::value>::type>
-{
-    static T* value(const T& src)
-    {
-        return new T(src);
-    }
-
-    static T* value(T&& src)
-    {
-        return new T(std::forward<T>(src));
-    }
-};
-
-template <typename T>
-struct copy_or_move_impl<T, typename std::enable_if<!std::is_copy_constructible<T>::value>::type>
-{
-    static T* value(const T& src)
-    {
-        throw std::runtime_error("Can't copy return value. Type is not copy constructible.");
-    }
-
-    static T* value(T&& src)
-    {
-        return new T(std::forward<T>(src));
-    }
-};
-
-template <typename T>
-static T* copy_or_move(const T& src)
-{
-    return copy_or_move_impl<T>::value(static_cast<const T&>(src));
-}
-
-template <typename T>
-static T* copy_or_move(T&& src)
-{
-    return copy_or_move_impl<T>::value(std::forward<T>(src));
-}
-
-template <typename T>
-static T* copy_or_move(T* src)
-{
-    return copy_or_move_impl<T>::value(static_cast<const T&>(*src));
-}
-
-template <typename T>
-static T* move(T& src)
-{
-    return new T(std::move(src));
-}
-
-template <typename T>
-static T* move(T&& src)
-{
-    return new T(std::move(src));
-}
-
-template <typename T>
-static T* move(T* src)
+T* move(T* src)
 {
     return new T(std::move(*src));
 }
@@ -127,7 +54,7 @@ struct loader
     static T load(handle from)
     {
         this_t* res = load_impl(from);
-        return detail::match_pointer<T>(res);
+        return detail::pointer_to_value<T>(res);
     }
 
     static this_t* load_impl(handle from)
@@ -180,11 +107,11 @@ struct loader
 template <typename T, typename = void>
 struct caster
 {
-    using this_t = typename std::remove_pointer_t<typename std::decay_t<T>>;
+    using this_t = detail::clean_t<T>;
 
     static handle cast(T src, return_value_policy ret_val_policy)
     {
-        this_t* this_ptr = detail::match_pointer<this_t*>(src);
+        this_t* this_ptr = detail::value_to_pointer<T>(src);
 
         auto py_obj = detail::internals().object_for_<this_t>(this_ptr);
         auto type = detail::internals().type_info_for_<this_t>();
@@ -209,12 +136,12 @@ struct caster
         switch (ret_val_policy)
         {
           case return_value_policy::copy:
-            payload = detail::copy_or_move(src);
+            payload = detail::copy(this_ptr);
             is_owned = true;
             break;
 
           case return_value_policy::move:
-            payload = detail::move(src);
+            payload = detail::move(this_ptr);
             is_owned = true;
             break;
 
