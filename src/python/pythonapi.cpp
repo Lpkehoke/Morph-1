@@ -187,12 +187,6 @@ tuple type_object::mro()
     return type_ptr()->tp_mro;
 }
 
-object type_object::create_instance()
-{
-    object res = detail::make_new_instance(type_ptr());
-    return res;
-}
-
 tuple::tuple()
   : object()
 {}

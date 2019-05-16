@@ -40,6 +40,20 @@ class class_
         return *this;
     }
 
+    class_& def_abstract(const char* name)
+    {
+        auto meth = detail::make_abstract_method_instance(name);
+
+        if (!meth)
+        {
+            throw std::runtime_error("Failed to create abstract method.");
+        }
+
+        m_type_obj.setattr(name, meth.release());
+
+        return *this;
+    }
+
   private:
     module      m_scope;
     type_object m_type_obj;

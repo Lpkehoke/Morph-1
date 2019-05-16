@@ -138,37 +138,37 @@ struct loader
         {
             auto inst = reinterpret_cast<detail::instance*>(from.ptr());
 
-            if (!inst->m_value_and_holder)
+            if (!inst->m_holder)
             {
                 auto tmp = new typename std::aligned_storage<sizeof(this_t), alignof(this_t)>::type();
                 auto this_ptr = reinterpret_cast<this_t*>(tmp);
 
-                inst->m_value_and_holder = new detail::value_and_holder_t(this_ptr, true);
+                inst->m_holder = new detail::holder_t(this_ptr, true);
 
                 detail::internals().register_instance(this_ptr, from);
                 return this_ptr;
             }
 
-            auto value_and_holder = inst->m_value_and_holder;
+            auto holder = inst->m_holder;
             while (true)
             {
-                if (value_and_holder->m_held_tinfo->hash_code() == typeid(this_t).hash_code())
+                if (holder->m_held_tinfo->hash_code() == typeid(this_t).hash_code())
                 {
-                    auto this_ptr = reinterpret_cast<this_t*>(value_and_holder->m_held.get());
+                    auto this_ptr = reinterpret_cast<this_t*>(holder->m_held.get());
                     return this_ptr;
                 }
 
-                if (!value_and_holder->m_next)
+                if (!holder->m_next)
                 {
                     auto tmp = new typename std::aligned_storage<sizeof(this_t), alignof(this_t)>::type();
                     auto this_ptr = reinterpret_cast<this_t*>(tmp);
 
-                    value_and_holder->m_next = new detail::value_and_holder_t(this_ptr, true);
+                    holder->m_next = new detail::holder_t(this_ptr, true);
                     detail::internals().register_instance(this_ptr, from);
                     return this_ptr;
                 }
 
-                value_and_holder = value_and_holder->m_next;
+                holder = holder->m_next;
             }
         }
 
@@ -195,9 +195,9 @@ struct caster
             return py_obj.inc_ref();
         }
         
-        auto res = type.create_instance();
+        auto res = detail::make_new_instance(type.type_ptr());
 
-        auto inst = reinterpret_cast<detail::instance*>(res.ptr());
+        auto inst = reinterpret_cast<detail::instance*>(res);
         this_t* payload = nullptr;
         bool is_owned = false;
 
@@ -221,24 +221,24 @@ struct caster
             assert(false && "Unhandled return policy.");
         }
 
-        if (!inst->m_value_and_holder)
+        if (!inst->m_holder)
         {
-            inst->m_value_and_holder = new detail::value_and_holder_t(payload, is_owned);
+            inst->m_holder = new detail::holder_t(payload, is_owned);
         }
         else
         {
-            auto value_and_holder = inst->m_value_and_holder;
-            while (value_and_holder->m_next)
+            auto holder = inst->m_holder;
+            while (holder->m_next)
             {
-                value_and_holder = value_and_holder->m_next;
+                holder = holder->m_next;
             }
 
-            value_and_holder->m_next = new detail::value_and_holder_t(payload, is_owned);
+            holder->m_next = new detail::holder_t(payload, is_owned);
         }
 
         detail::internals().register_instance(payload, res);
 
-        return res.release();
+        return res;
     }
 };
 

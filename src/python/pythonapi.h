@@ -82,10 +82,6 @@ class type_object : public object
     PyTypeObject* type_ptr();
 
     tuple mro();
-
-    // TODO: This is bad. Method assumes the held type is
-    // subtype of cpp wrapper.
-    object create_instance();
 };
 
 class list : public object

@@ -104,9 +104,25 @@ struct internals_t
         return m_abc_module.getattr("ABCMeta").ptr();
     }
 
+    type_object abstract_method_type()
+    {
+        if (!m_abstract_method_type)
+        {
+            m_abstract_method_type = make_abstract_method_type();
+        }
+
+        if (!m_abstract_method_type)
+        {
+            throw std::runtime_error("Failed to create AbstractMethod type.");
+        }
+
+        return m_abstract_method_type;
+    }
+
     type_map_t  m_registered_types;
     inst_map_t  m_registered_instances;
     type_object m_base_class;
+    type_object m_abstract_method_type;
     object      m_abc_module;
 };
 
