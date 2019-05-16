@@ -15,9 +15,9 @@
 
 namespace py
 {
-
 namespace detail
 {
+
 
 template <typename T>
 enable_if_copy_constructible<T*> copy(T* src)
@@ -25,16 +25,71 @@ enable_if_copy_constructible<T*> copy(T* src)
     return new T(static_cast<const T&>(*src));
 }
 
+
 template <typename T>
 enable_if_not_copy_constructible<T*> copy(T* src)
 {
     throw std::runtime_error("Can't copy type with missing copy constructor.");
 }
 
+
 template <typename T>
 T* move(T* src)
 {
     return new T(std::move(*src));
+}
+
+
+template <typename T>
+holder_t* make_new_holder()
+{
+    auto tmp = new typename std::aligned_storage<sizeof(T), alignof(T)>::type();
+    auto this_ptr = reinterpret_cast<T*>(tmp);
+
+    return new detail::holder_t(this_ptr, true);
+}
+
+
+template <typename T>
+std::shared_ptr<T> load_value(handle src)
+{
+    if (!PyObject_TypeCheck(
+            src.ptr(),
+            internals().type_info_for_<T>().type_ptr()))
+    {
+        // TODO: supply error messages.
+        throw load_error();
+    }
+
+    auto inst = reinterpret_cast<detail::instance*>(src.ptr());
+
+    if (!inst->m_holder)
+    {
+        inst->m_holder = make_new_holder<T>();
+        auto this_ptr = std::reinterpret_pointer_cast<T>(inst->m_holder->m_held);
+        detail::internals().register_instance(this_ptr.get(), src);
+        return this_ptr;
+    }
+
+    auto holder = inst->m_holder;
+    while (true)
+    {
+        if (holder->m_held_tinfo->hash_code() == typeid(T).hash_code())
+        {
+            auto this_ptr = std::reinterpret_pointer_cast<T>(holder->m_held);
+            return this_ptr;
+        }
+
+        if (!holder->m_next)
+        {
+            holder->m_next = make_new_holder<T>();
+            auto this_ptr = std::reinterpret_pointer_cast<T>(holder->m_next->m_held);
+            detail::internals().register_instance(this_ptr.get(), src);
+            return this_ptr;
+        }
+
+        holder = holder->m_next;
+    }
 }
 
 } // namespace detail
@@ -49,57 +104,24 @@ enum class return_value_policy
 template <typename T, typename = void>
 struct loader
 {
-    using this_t = typename std::remove_pointer_t<typename std::decay_t<T>>;
+    using this_t = detail::clean_t<T>;
 
     static T load(handle from)
     {
-        this_t* res = load_impl(from);
-        return detail::pointer_to_value<T>(res);
+        auto res = detail::load_value<this_t>(from);
+        return detail::pointer_to_value<T>(res.get());
     }
+};
 
-    static this_t* load_impl(handle from)
+
+template <typename T>
+struct loader<std::shared_ptr<T>>
+{
+    using this_t = detail::clean_t<T>;
+
+    static std::shared_ptr<T> load(handle from)
     {
-        if (PyObject_TypeCheck(
-                from.ptr(),
-                detail::internals().type_info_for_<this_t>().type_ptr()))
-        {
-            auto inst = reinterpret_cast<detail::instance*>(from.ptr());
-
-            if (!inst->m_holder)
-            {
-                auto tmp = new typename std::aligned_storage<sizeof(this_t), alignof(this_t)>::type();
-                auto this_ptr = reinterpret_cast<this_t*>(tmp);
-
-                inst->m_holder = new detail::holder_t(this_ptr, true);
-
-                detail::internals().register_instance(this_ptr, from);
-                return this_ptr;
-            }
-
-            auto holder = inst->m_holder;
-            while (true)
-            {
-                if (holder->m_held_tinfo->hash_code() == typeid(this_t).hash_code())
-                {
-                    auto this_ptr = reinterpret_cast<this_t*>(holder->m_held.get());
-                    return this_ptr;
-                }
-
-                if (!holder->m_next)
-                {
-                    auto tmp = new typename std::aligned_storage<sizeof(this_t), alignof(this_t)>::type();
-                    auto this_ptr = reinterpret_cast<this_t*>(tmp);
-
-                    holder->m_next = new detail::holder_t(this_ptr, true);
-                    detail::internals().register_instance(this_ptr, from);
-                    return this_ptr;
-                }
-
-                holder = holder->m_next;
-            }
-        }
-
-        throw load_error();
+        return detail::load_value<this_t>(from);
     }
 };
 

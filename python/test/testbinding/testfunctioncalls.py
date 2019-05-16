@@ -49,6 +49,15 @@ class TestParameterValues(unittest.TestCase):
         self.assertTrue(res)
         self.assertEqual("bar", nc.foo())
 
+    def test_take_cpp_nocopyable_shared_ptr(self):
+        nc = test.Nocopyable()
+
+        # Sets nc value to "bar"
+        res = self.test_parameter_values.take_nocopyable_shared_ptr(nc)
+
+        self.assertTrue(res)
+        self.assertEqual("bar", nc.foo())
+
 
 class TestAbstractMethodCalls(unittest.TestCase):
 

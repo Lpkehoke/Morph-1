@@ -1,8 +1,8 @@
 #include "python/module.h"
 #include "python/class.h"
 
+#include <memory>
 #include <string>
-#include <iostream>
 
 namespace test
 {
@@ -137,6 +137,17 @@ class test_parameter_values
         value.set_foo("bar");
         return true;
     }
+
+    bool take_nocopyable_shared_ptr(std::shared_ptr<nocopyable> value)
+    {
+        if (!value || (value->foo() != "foo"))
+        {
+            return false;
+        }
+
+        value->set_foo("bar");
+        return true;
+    }
 };
 
 class abstract_class
@@ -167,7 +178,8 @@ MORPH_PYTHON_MODULE(_test, m, Morph Python test module)
         .def(py::init<> {})
         .def("take_one_int", &test_parameter_values::take_one_int)
         .def("take_hello_string", &test_parameter_values::take_hello_string)
-        .def("take_nocopyable_ref", &test_parameter_values::take_nocopyable_ref);
+        .def("take_nocopyable_ref", &test_parameter_values::take_nocopyable_ref)
+        .def("take_nocopyable_shared_ptr", &test_parameter_values::take_nocopyable_shared_ptr);
     
     py::class_<nocopyable>(m, "Nocopyable")
         .def(py::init<>{})
