@@ -13,4 +13,7 @@ python_dep = dependency('python3')
 thread_dep = dependency('threads')
 
 subdir('src')
-subdir('docs')
+
+if get_option('generate_docs')
+    subdir('docs')
+endif
