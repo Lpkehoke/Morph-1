@@ -51,9 +51,9 @@ struct instance
 };
 
 
-PyObject* make_new_instance(PyTypeObject* subtype);
+handle make_new_instance(PyTypeObject* subtype);
 type_object make_new_base_class();
-type_object make_new_type(const char* name, type_object base_class);
+type_object make_new_type(const char* name, object nmspace);
 type_object make_abstract_method_type();
 object make_abstract_method_instance(const char* name);
 

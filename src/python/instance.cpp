@@ -12,19 +12,23 @@ namespace py
 namespace detail
 {
 
-PyObject* make_new_instance(PyTypeObject* subtype)
+PyObject* new_instance(PyTypeObject* subtype, PyObject*, PyObject*)
 {
-    // TODO: do we need to call PyObject_Init to register heap instance?
-    auto inst = reinterpret_cast<instance*>(subtype->tp_alloc(subtype, 0));
-    inst->m_holder = nullptr;
+    auto res = PyBaseObject_Type.tp_new(subtype, PyTuple_New(0), nullptr);
 
-    return reinterpret_cast<PyObject*>(inst);
+    if (res)
+    {
+        auto inst = reinterpret_cast<instance*>(subtype->tp_alloc(subtype, 0));
+        inst->m_holder = nullptr;
+    }
+
+    return res;
 }
 
 
-PyObject* new_instance(PyTypeObject* subtype, PyObject* args, PyObject*)
+handle make_new_instance(PyTypeObject* subtype)
 {
-    return make_new_instance(subtype);
+    return new_instance(subtype, nullptr, nullptr);
 }
 
 
@@ -104,16 +108,15 @@ type_object make_new_base_class()
 }
 
 
-type_object make_new_type(const char* name, type_object base_class)
+type_object make_new_type(const char* name, object nmspace)
 {  
+    auto base_class = internals().base_class();
     auto abc_meta = internals().abc_meta().type_ptr();
 
     auto name_obj = PyUnicode_FromString(name);
     auto bases = PyTuple_Pack(1, base_class.ptr());
-    auto dict = PyDict_New();
-    PyDict_SetItemString(dict, "__module__", PyUnicode_FromString("KEK"));
     
-    auto args = PyTuple_Pack(3, name_obj, bases, dict);
+    auto args = PyTuple_Pack(3, name_obj, bases, nmspace.ptr());
 
     auto heap_type = reinterpret_cast<PyHeapTypeObject*>(
         abc_meta->tp_new(abc_meta, args, nullptr));
@@ -122,9 +125,6 @@ type_object make_new_type(const char* name, type_object base_class)
     {
         throw std::runtime_error("Failed to allocate new type.");
     }
-
-    heap_type->ht_type.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HEAPTYPE
-        | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC;
 
     auto type = reinterpret_cast<PyTypeObject*>(heap_type);
 
@@ -161,9 +161,8 @@ PyObject* get_true(PyObject*, void*)
 }
 
 
-PyObject* instancemethod_call(PyObject*, PyObject*, PyObject*)
+PyObject* abstract_method_call(PyObject*, PyObject*, PyObject*)
 {
-    // TODO: better error message.
     PyErr_Format(PyExc_TypeError, "Trying to call pure abstract method.");
     return nullptr;
 }
@@ -195,7 +194,7 @@ type_object make_abstract_method_type()
     };
 
     type->tp_getset = getset;
-    type->tp_call = instancemethod_call;
+    type->tp_call = abstract_method_call;
 
     if (PyType_Ready(type) < 0)
     {

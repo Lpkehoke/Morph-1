@@ -307,7 +307,7 @@ class cpp_function
         else
         {
             object inst_meth = PyInstanceMethod_New(meth.release().ptr());
-            scope.setattr(name, inst_meth.release());
+            PyDict_SetItemString(scope.ptr(), name, inst_meth.ptr());
         }
     }
 

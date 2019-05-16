@@ -1,4 +1,5 @@
 import unittest
+
 import _test as test
 
 
@@ -47,3 +48,23 @@ class TestParameterValues(unittest.TestCase):
 
         self.assertTrue(res)
         self.assertEqual("bar", nc.foo())
+
+
+class TestAbstractMethodCalls(unittest.TestCase):
+
+    def test_abstract_class_is_not_constructible(self):
+        self.assertRaises(TypeError, test.AbstractClass)
+
+    def test_derived_abstract_class_is_not_constructible(self):
+        class Derived(test.AbstractClass):
+            pass
+
+        self.assertRaises(TypeError, Derived)
+
+    def test_derived_class_is_constructible(self):
+        class Derived(test.AbstractClass):
+            def abstract_method(self):
+                pass
+
+        d = Derived()
+        self.assertEqual("hello", d.say_hello())

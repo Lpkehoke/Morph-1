@@ -139,6 +139,15 @@ class test_parameter_values
     }
 };
 
+class abstract_class
+{
+  public:
+    std::string say_hello()
+    {
+        return "hello";
+    }
+};
+
 MORPH_PYTHON_MODULE(_test, m, Morph Python test module)
 {
     py::class_<test_return_values>(m, "TestReturnValues")
@@ -180,6 +189,11 @@ MORPH_PYTHON_MODULE(_test, m, Morph Python test module)
     py::class_<dummy_d>(m, "DummyD")
         .def("say_d", &dummy_d::say_d)
         .def(py::init<>());
+
+    py::class_<abstract_class>(m, "AbstractClass")
+        .def(py::init<>())
+        .def("say_hello", &abstract_class::say_hello)
+        .def_abstract("abstract_method");
 }
 
 } // namespace test

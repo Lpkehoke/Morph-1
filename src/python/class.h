@@ -15,12 +15,17 @@ class class_
 {
   public:
     class_(module scope, const char* name)
-      : m_scope(scope)
-    {
-        m_type_obj = detail::make_new_type(name, detail::internals().base_class());
-        scope.add_object(name, m_type_obj);
+      : m_name(name)
+      , m_scope(scope)
+      , m_namespace(PyDict_New())
+    {}
 
-        detail::internals().register_type<Class>(m_type_obj);
+    ~class_()
+    {
+        auto type = detail::make_new_type(m_name, m_namespace);
+        m_scope.add_object(m_name, type);
+
+        detail::internals().register_type<Class>(type);
     }
 
     template <typename Func>
@@ -29,14 +34,14 @@ class class_
         Func&&              fn,
         return_value_policy policy = return_value_policy::copy)
     {
-        detail::cpp_function(name, m_type_obj, policy, std::forward<Func>(fn));
+        detail::cpp_function(name, m_namespace, policy, std::forward<Func>(fn));
         return *this;
     }
 
     template <typename... Args>
     class_& def(init<Args...>)
     {
-        detail::cpp_function(init<Class, Args...> {}, m_type_obj);
+        detail::cpp_function(init<Class, Args...> {}, m_namespace);
         return *this;
     }
 
@@ -49,14 +54,17 @@ class class_
             throw std::runtime_error("Failed to create abstract method.");
         }
 
-        m_type_obj.setattr(name, meth.release());
+        PyDict_SetItemString(m_namespace.ptr(), name, meth.ptr());
 
         return *this;
     }
 
   private:
+    const char* m_name;
     module      m_scope;
-    type_object m_type_obj;
+
+    // TODO: use dict wrapper instead.
+    object      m_namespace;
 };
 
 } // namespace py

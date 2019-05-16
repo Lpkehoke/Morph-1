@@ -197,7 +197,12 @@ struct caster
         
         auto res = detail::make_new_instance(type.type_ptr());
 
-        auto inst = reinterpret_cast<detail::instance*>(res);
+        if (!res)
+        {
+            return res;
+        }
+
+        auto inst = reinterpret_cast<detail::instance*>(res.ptr());
         this_t* payload = nullptr;
         bool is_owned = false;
 
