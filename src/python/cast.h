@@ -20,14 +20,14 @@ namespace detail
 
 
 template <typename T>
-enable_if_copy_constructible<T*> copy(T* src)
+enable_if_copy_constructible_t<T*> copy(T* src)
 {
     return new T(static_cast<const T&>(*src));
 }
 
 
 template <typename T>
-enable_if_not_copy_constructible<T*> copy(T* src)
+enable_if_not_copy_constructible_t<T*> copy(T* src)
 {
     throw std::runtime_error("Can't copy type with missing copy constructor.");
 }

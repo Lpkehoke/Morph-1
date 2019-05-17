@@ -19,14 +19,15 @@ template <typename T>
 using enable_if_reference_t = typename std::enable_if_t<std::is_reference_v<T>, T>;
 
 template <typename T>
-using enable_if_copy_constructible = typename std::enable_if_t<
+using enable_if_copy_constructible_t = typename std::enable_if_t<
                                         std::is_copy_constructible_v<
                                             typename std::remove_pointer_t<T>>, T>;
 
 template <typename T>
-using enable_if_not_copy_constructible = typename std::enable_if_t<
+using enable_if_not_copy_constructible_t = typename std::enable_if_t<
                                             !std::is_copy_constructible_v<
                                                 typename std::remove_pointer_t<T>>, T>;
+
 
 template <typename T>
 auto value_to_pointer(clean_t<T>&& src)

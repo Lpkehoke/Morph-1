@@ -47,6 +47,31 @@ struct fn_signature_from_lambda_t
 };
 
 
+template <typename... Args, std::size_t... idx>
+std::tuple<Args...> python_to_cpp_tuple(tuple py_tuple, std::index_sequence<idx...>)
+{
+    return std::tuple<Args...>(loader<Args>::load(py_tuple[idx])...);
+}
+
+
+template <typename... Args>
+tuple cpp_to_python_tuple_impl(Args&&... args)
+{
+    auto py_tuple = PyTuple_Pack(
+        sizeof...(Args),
+        caster<Args>::cast(std::forward<Args>(args))...);
+    
+    return py_tuple;
+}
+
+
+template <typename... Args>
+tuple cpp_to_python_tuple(std::tuple<Args...>&& cpp_tuple)
+{
+    return std::apply(cpp_to_python_tuple_impl, cpp_tuple);
+}
+
+
 /*
  *  Converts python arguments tuple to cpp values and
  *  passes them to the function.
@@ -86,7 +111,7 @@ struct function_invocation
         return_value_policy policy,
         return_is_none_tag<false>)
     {
-        auto cpp_args = load_arguments(py_args, arg_index_t {});
+        auto cpp_args = python_to_cpp_tuple<Args...>(py_args, arg_index_t {});
 
         Return res = std::apply(fn, std::move(cpp_args));
 
@@ -99,18 +124,12 @@ struct function_invocation
         return_value_policy policy,
         return_is_none_tag<true>)
     {
-        auto cpp_args = load_arguments(py_args, arg_index_t {});
+        auto cpp_args = python_to_cpp_tuple<Args...>(py_args, arg_index_t {});
 
         std::apply(fn, std::move(cpp_args));
 
         Py_XINCREF(Py_None);
         return Py_None;
-    }
-
-    template <std::size_t... idx>
-    static std::tuple<Args...> load_arguments(tuple py_args, std::index_sequence<idx...>)
-    {
-        return std::tuple<Args...>(loader<Args>::load(py_args[idx])...);
     }
 };
 
