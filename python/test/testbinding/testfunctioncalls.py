@@ -72,8 +72,10 @@ class TestAbstractMethodCalls(unittest.TestCase):
 
     def test_derived_class_is_constructible(self):
         class Derived(test.AbstractClass):
-            def abstract_method(self):
-                pass
+            def say_abstract(self):
+                return "abstract_hello"
 
         d = Derived()
         self.assertEqual("hello", d.say_hello())
+        self.assertEqual("abstract_hello", d.say_abstract())
+        self.assertEqual("abstract_hello", d.call_say_abstract())

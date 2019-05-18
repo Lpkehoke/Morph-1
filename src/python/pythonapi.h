@@ -25,6 +25,8 @@ class handle
     void setattr(const char* name, handle py_obj);
     handle getattr(const char* name);
 
+    handle operator()(handle args);
+
     bool is(handle other) const;
 
     operator bool() const;

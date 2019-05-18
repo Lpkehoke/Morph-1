@@ -76,6 +76,11 @@ handle handle::getattr(const char* name)
     }
 }
 
+handle handle::operator()(handle args)
+{
+    return PyObject_Call(m_ptr, args.ptr(), nullptr);
+}
+
 bool handle::is(handle other) const
 {
     return m_ptr == other.m_ptr;

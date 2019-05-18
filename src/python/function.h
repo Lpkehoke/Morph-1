@@ -59,7 +59,9 @@ tuple cpp_to_python_tuple_impl(Args&&... args)
 {
     auto py_tuple = PyTuple_Pack(
         sizeof...(Args),
-        caster<Args>::cast(std::forward<Args>(args))...);
+        caster<Args>::cast(
+            std::forward<Args>(args),
+            return_value_policy::copy).ptr()...); // TODO: use auto return value policy
     
     return py_tuple;
 }
@@ -68,7 +70,7 @@ tuple cpp_to_python_tuple_impl(Args&&... args)
 template <typename... Args>
 tuple cpp_to_python_tuple(std::tuple<Args...>&& cpp_tuple)
 {
-    return std::apply(cpp_to_python_tuple_impl, cpp_tuple);
+    return std::apply(cpp_to_python_tuple_impl<Args...>, std::forward<std::tuple<Args...>>(cpp_tuple));
 }
 
 

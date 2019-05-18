@@ -198,6 +198,22 @@ struct caster
 
 
 //
+//  Identity caster.
+//
+
+template<>
+struct caster<handle>
+{
+
+    static handle cast(handle src, return_value_policy)
+    {
+        return src;
+    }
+
+};
+
+
+//
 //  Integral types specialization.
 //
 

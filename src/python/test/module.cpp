@@ -1,5 +1,6 @@
 #include "python/module.h"
 #include "python/class.h"
+#include "python/trampoline.h"
 
 #include <memory>
 #include <string>
@@ -150,12 +151,23 @@ class test_parameter_values
     }
 };
 
-class abstract_class
+class abstract_class : public py::trampoline<abstract_class>
 {
   public:
     std::string say_hello()
     {
         return "hello";
+    }
+
+    std::string call_say_abstract()
+    {
+        return say_abstract();
+    }
+
+    std::string say_abstract()
+    {
+        auto res = invoke_python_impl("say_abstract");
+        return py::loader<std::string>::load(res);
     }
 };
 
@@ -205,7 +217,8 @@ MORPH_PYTHON_MODULE(_test, m, Morph Python test module)
     py::class_<abstract_class>(m, "AbstractClass")
         .def(py::init<>())
         .def("say_hello", &abstract_class::say_hello)
-        .def_abstract("abstract_method");
+        .def_abstract("say_abstract")
+        .def("call_say_abstract", &abstract_class::call_say_abstract);
 }
 
 } // namespace test
