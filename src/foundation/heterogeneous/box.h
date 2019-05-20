@@ -15,52 +15,32 @@ namespace heterogeneous
 class box
 {
   public:
-    box() noexcept
+    box()
       : m_pointee_type(nullptr)
     {}
 
-    box(const box& other) noexcept
-      : m_pointee_type(other.m_pointee_type)
-      , m_held(other.m_held)
+    template <typename T>
+    box(T&& value)
+      : m_pointee_type(&detail::type_info_for_<T>)
+      , m_held(new T(std::forward<T>))
     {}
 
-    box(box&& other)
-    {
-        m_pointee_type = std::exchange(other.m_pointee_type, nullptr);
-        std::swap(m_held, other.m_held);
-    }
-
-    box& operator=(box&& other)
-    {
-        if (other.m_held != m_held)
-        {
-            std::swap(m_pointee_type, other.m_pointee_type);
-            std::swap(m_held, other.m_held);
-        }
-
-        return *this;
-    }
-
     template <typename T>
-    std::shared_ptr<T> load() const noexcept
+    void store(T&& value)
     {
-        return std::reinterpret_pointer_cast<T>(m_held);
+        store<T>(std::forward<T>(value), std::default_delete<T>{});
     }
 
-    void* raw_ptr() noexcept
+    template <typename T, typename Deleter>
+    void store(T&& value, Deleter&& deleter)
     {
-        return m_held.get();
+        m_pointee_type(&detail::type_info_for_<T>);
+        m_held = std::make_shared<T>(
+            std::forward<T>(value),
+            std::forward<Deleter>(deleter));
     }
 
-    template <typename T>
-    bool is_() const noexcept
-    {
-        return m_pointee_type
-            ? m_pointee_type->m_tinfo->hash_code() == typeid(T).hash_code()
-            : false;
-    }
-
-    explicit operator bool() const noexcept
+    explicit operator bool() const
     {
         return static_cast<bool>(m_held);
     }

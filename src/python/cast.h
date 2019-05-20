@@ -281,8 +281,12 @@ struct loader<T, typename std::enable_if_t<std::is_integral<T>::value>>
 //  std::string specialization.
 //
 
-template<>
-struct caster<std::string>
+template<typename T>
+struct caster<T,
+              typename std::enable_if_t<
+                    std::is_same_v<
+                        typename std::remove_reference_t<T>,
+                        std::string>>>
 {
     static handle cast(std::string* src, return_value_policy)
     {
