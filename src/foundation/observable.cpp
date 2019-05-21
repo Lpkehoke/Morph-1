@@ -28,7 +28,7 @@ namespace foundation
     }
 
     template <typename T>
-    auto observable<T>::subscribe(on_update_fn on_update)
+    auto observable<T>::subscribe(on_update_fn on_update) noexcept
     {
         tbb::spin_mutex::scoped_lock lock(impl_observable->m_mutex);
         impl_observable->m_subscribers.emplace_back(std::move(on_update));
