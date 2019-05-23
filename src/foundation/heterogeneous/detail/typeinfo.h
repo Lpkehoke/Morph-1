@@ -31,8 +31,8 @@ struct type_info
     {}
 
     const std::type_info*   m_tinfo;
-    const ctor_t*           m_copy_ctor;
-    const ctor_t*           m_move_ctor;
+    ctor_t*                 m_copy_ctor;
+    ctor_t*                 m_move_ctor;
 };
 
 
@@ -48,8 +48,8 @@ struct copy_ctor_for_<T, typename std::enable_if_t<std::is_copy_constructible_v<
     static constexpr type_info::ctor_t* value = [](void* other_ptr)
         {
             auto this_ptr_typed = reinterpret_cast<T*>(other_ptr);
-
-            return new T(static_cast<const T&>(*this_ptr_typed));
+            auto res = new T(static_cast<const T&>(*this_ptr_typed));;
+            return static_cast<void*>(res);
         };
 };
 
@@ -59,8 +59,8 @@ struct move_ctor_for_
     static constexpr type_info::ctor_t* value = [](void* other_ptr)
         {
             auto this_ptr_typed = reinterpret_cast<T*>(other_ptr);
-
-            return new T(static_cast<T&&>(*this_ptr_typed));
+            auto res = new T(static_cast<T&&>(*this_ptr_typed));
+            return static_cast<void*>(res);
         };
 };
 
