@@ -19,32 +19,38 @@ class box
       : m_pointee_type(nullptr)
     {}
 
-    template <typename T>
-    box(T&& value)
-      : m_pointee_type(&detail::type_info_for_<T>)
-      , m_held(new T(std::forward<T>))
+    box(const box& other)
+      : m_pointee_type(other.m_pointee_type)
+      , m_held(other.m_held)
     {}
 
-    template <typename T>
-    void store(T&& value)
+    box(box&& other)
     {
-        store<T>(std::forward<T>(value), std::default_delete<std::decay_t<T>>{});
-    }
-
-    template <typename T, typename Deleter>
-    void store(T&& value, Deleter&& deleter)
-    {
-        m_pointee_type(&detail::type_info_for_<T>);
-        m_held = std::make_shared<T>(
-            std::forward<T>(value),
-            std::forward<Deleter>(deleter));
+        m_pointee_type = std::exchange(other.m_pointee_type, nullptr);
+        std::swap(m_held, other.m_held);
     }
 
     template <typename T>
-    void store(std::shared_ptr<T> value)
+    box(T* src, bool take_ownership)
     {
-        m_pointee_type = &detail::type_info_for_<T>;
-        m_held = std::static_pointer_cast<void>(value);
+        initialize(src, take_ownership);
+    }
+
+    box& operator=(box&& other)
+    {
+        if (other.m_held != m_held)
+        {
+            std::swap(m_pointee_type, other.m_pointee_type);
+            std::swap(m_held, other.m_held);
+        }
+
+        return *this;
+    }
+
+    template <typename T>
+    void store(T* src, bool take_ownership)
+    {
+        initialize(src, take_ownership);
     }
 
     template <typename T>
@@ -53,6 +59,11 @@ class box
         return m_held
             ? std::reinterpret_pointer_cast<T>(m_held)
             : std::shared_ptr<T>();
+    }
+
+    void* raw_ptr()
+    {
+        return m_held.get();
     }
 
     template <typename T>

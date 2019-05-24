@@ -36,29 +36,10 @@ class list
     };
 
     list();
+    list(box boxed_value);
     ~list();
 
-    template <typename T>
-    void push_back(T&& value)
-    {
-        push_back<T>(std::forward<T>(value), std::default_delete<std::decay_t<T>>{});
-    }
-
-    template <typename T, typename Deleter>
-    void push_back(T&& value, Deleter&& deleter)
-    {
-        auto l = push_back_generic();
-        l->m_held.store(
-            std::forward<T>(value),
-            std::forward<Deleter>(deleter));
-    }
-
-    template <typename T>
-    void push_back(std::shared_ptr<T> value)
-    {
-        auto l = push_back_generic();
-        l->m_held.store(std::move(value));
-    }
+    void push_back(box boxed_value);
 
     bool empty() const;
     iterator begin();
