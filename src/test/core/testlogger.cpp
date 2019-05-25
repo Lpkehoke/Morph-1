@@ -1,5 +1,4 @@
 #include "core/logger.h"
-#include "core/logger.cpp"
 
 #include <memory>
 #include <string>

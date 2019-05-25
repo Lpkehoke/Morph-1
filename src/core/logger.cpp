@@ -2,7 +2,6 @@
 
 #include "foundation/taskqueue.h"
 #include "foundation/observable.h"
-#include "foundation/observable.cpp"
 
 #include <tbb/spin_mutex.h>
 
