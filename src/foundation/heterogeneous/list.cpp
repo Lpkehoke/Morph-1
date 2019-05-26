@@ -69,7 +69,7 @@ void list::push_back(box boxed_value)
 
 bool list::empty() const
 {
-    return static_cast<bool>(m_held);
+    return !static_cast<bool>(m_held);
 }
 
 list::iterator list::begin()

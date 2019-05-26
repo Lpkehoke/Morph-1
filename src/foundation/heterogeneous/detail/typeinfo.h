@@ -15,16 +15,10 @@ struct type_info
 {
     using ctor_t = void* (void*);
 
-    type_info()
-      : m_tinfo(nullptr)
-      , m_copy_ctor(nullptr)
-      , m_move_ctor(nullptr)
-    {}
-
     type_info(
         const std::type_info*   tinfo,
-        const ctor_t*           copy_ctor,
-        const ctor_t*           move_ctor)
+        ctor_t*                 copy_ctor,
+        ctor_t*                 move_ctor)
       : m_tinfo(tinfo)
       , m_copy_ctor(copy_ctor)
       , m_move_ctor(move_ctor)
