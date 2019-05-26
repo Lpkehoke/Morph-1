@@ -1,5 +1,8 @@
 #include "foundation/heterogeneous/list.h"
 
+#include "foundation/heterogeneous/box.h"
+
+#include <cassert>
 #include <utility>
 
 namespace foundation
