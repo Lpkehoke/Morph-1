@@ -18,15 +18,13 @@ using enable_if_pointer_t = typename std::enable_if_t<std::is_pointer_v<T>, T>;
 template <typename T>
 using enable_if_reference_t = typename std::enable_if_t<std::is_reference_v<T>, T>;
 
-template <typename T>
+template <typename T, typename Return = T>
 using enable_if_copy_constructible_t = typename std::enable_if_t<
-                                        std::is_copy_constructible_v<
-                                            typename std::remove_pointer_t<T>>, T>;
+                                        std::is_copy_constructible_v<T>, Return>;
 
-template <typename T>
+template <typename T, typename Return = T>
 using enable_if_not_copy_constructible_t = typename std::enable_if_t<
-                                            !std::is_copy_constructible_v<
-                                                typename std::remove_pointer_t<T>>, T>;
+                                            !std::is_copy_constructible_v<T>, Return>;
 
 
 template <typename T>

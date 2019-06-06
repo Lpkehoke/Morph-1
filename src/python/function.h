@@ -1,7 +1,7 @@
 #pragma once
 
-#include "python/pythonapi.h"
 #include "python/cast.h"
+#include "python/pythonapi.h"
 
 #include <tuple>
 #include <type_traits>
@@ -117,7 +117,7 @@ struct function_invocation
 
         Return res = std::apply(fn, std::move(cpp_args));
 
-        return caster<Return>::cast(std::forward<Return>(res), policy);
+        return cast(std::forward<Return>(res), policy);
     }
 
     static handle invoke(
@@ -365,4 +365,12 @@ class cpp_function
 };
 
 } // namespace detail
+
+template <typename... Args>
+handle handle::operator()(Args&&... args)
+{
+    auto py_args = detail::cpp_to_python_tuple(std::tuple {std::forward<Args>(args)...});
+    return PyObject_Call(m_ptr, py_args.ptr(), nullptr);
+}
+
 } // namespace py

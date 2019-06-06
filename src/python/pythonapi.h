@@ -4,10 +4,12 @@
 
 #include <functional>
 #include <stdexcept>
-#include <utility>
+#include <string>
 
 namespace py
 {
+
+class type_object;
 
 class handle
 {
@@ -22,12 +24,16 @@ class handle
     handle& inc_ref();
     handle& dec_ref();
 
+    type_object type() const;
+
     void setattr(const char* name, handle py_obj);
     handle getattr(const char* name);
 
-    handle operator()(handle args);
+    template <typename... Args>
+    handle operator()(Args&&... args);
 
     bool is(handle other) const;
+    std::string repr() const;
 
     operator bool() const;
 

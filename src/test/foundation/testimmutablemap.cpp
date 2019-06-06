@@ -1,4 +1,4 @@
-#include "foundation/immutable/immutablemap.h"
+#include "foundation/immutable/map.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <utility>
 
-using namespace foundation;
+using namespace foundation::immutable;
 using namespace testing;
 
 template <typename T>
@@ -164,7 +164,7 @@ TEST(immutable_detail, make_array_erase_end)
 
 TEST(immutable_map, basic_set)
 {
-    using map_t = immutable_map<int, int>;
+    using map_t = map<int, int>;
     map_t m;
 
     std::function<map_t(int)> set = [m](int value)
@@ -193,7 +193,7 @@ TEST(immutable_map, basic_set)
 
 TEST(immutable_map, collision_set)
 {
-    using map_t = immutable_map<int, int, collision_hash<int>>;
+    using map_t = map<int, int, collision_hash<int>>;
     map_t m;
 
     for (int i = 0; i < 64; ++i)
@@ -212,7 +212,7 @@ TEST(immutable_map, collision_set)
 
 TEST(immutable_map, basic_erase)
 {
-    using map_t = immutable_map<int, int>;
+    using map_t = map<int, int>;
     map_t m;
 
     for (int i = 0; i < 64 * 16; ++i)
@@ -245,7 +245,7 @@ TEST(immutable_map, basic_erase)
 
 TEST(immutable_map, collision_erase)
 {
-    using map_t = immutable_map<int, int, collision_hash<int>>;
+    using map_t = map<int, int, collision_hash<int>>;
     map_t m;
 
     for (int i = 0; i < 64; ++i)

@@ -3,14 +3,60 @@
 #include "python/function.h"
 #include "python/instance.h"
 #include "python/internals.h"
+#include "python/module.h"
 #include "python/pythonapi.h"
+
+#include "foundation/heterogeneous/typeinfo.h"
 
 #include <stdexcept>
 
 namespace py
 {
 
-template <typename Class>
+template <typename T>
+struct base_class {};
+
+namespace detail
+{
+
+template <typename Class, typename T>
+struct handle_base_class_impl
+{
+    using type_set_t = detail::python_type_info::conversions_set_t;
+
+    static void handle(type_set_t& conversions)
+    {}
+};
+
+template <typename Class, typename T>
+struct handle_base_class_impl<Class, base_class<T>>
+{
+    using type_set_t = detail::python_type_info::conversions_set_t;
+
+    static void handle(type_set_t& conversions)
+    {
+        static_assert(std::is_base_of_v<T, Class>);
+        conversions.insert(typeid(T));
+    }
+};
+
+template <typename Class, typename... Types>
+struct handle_base_class
+{
+    using type_set_t = detail::python_type_info::conversions_set_t;
+
+    static type_set_t handle()
+    {
+        type_set_t res;
+        (handle_base_class_impl<Class, Types>::handle(res),...);
+        return res;
+    }
+};
+
+} // namespace detail
+
+
+template <typename Class, typename... Options>
 class class_
 {
   public:
@@ -25,7 +71,8 @@ class class_
         auto type = detail::make_new_type(m_name, m_namespace);
         m_scope.add_object(m_name, type);
 
-        detail::internals().register_type<Class>(type);
+        auto conversions = detail::handle_base_class<Class, Options...>::handle();
+        detail::register_python_type<Class>(type, std::move(conversions));
     }
 
     template <typename Func>

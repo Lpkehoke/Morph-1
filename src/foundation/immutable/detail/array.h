@@ -7,6 +7,8 @@
 
 namespace foundation
 {
+namespace immutable
+{
 namespace detail
 {
 
@@ -100,4 +102,5 @@ inline T* make_array_erase(T* first, count_t size, count_t position)
 }
 
 } // namespace detail
+} // namespace immutable
 } // namespace foundation

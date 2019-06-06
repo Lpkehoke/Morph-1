@@ -1,9 +1,7 @@
 #include "python/pythonapi.h"
 
 #include "python/exceptions.h"
-#include "python/instance.h"
 
-#include <functional>
 #include <stdexcept>
 #include <utility>
 
@@ -45,6 +43,11 @@ handle& handle::dec_ref()
     return *this;
 }
 
+type_object handle::type() const
+{
+    return PyObject_Type(m_ptr);
+}
+
 void handle::setattr(const char* name, handle py_obj)
 {
     if (m_ptr)
@@ -76,14 +79,18 @@ handle handle::getattr(const char* name)
     }
 }
 
-handle handle::operator()(handle args)
-{
-    return PyObject_Call(m_ptr, args.ptr(), nullptr);
-}
-
 bool handle::is(handle other) const
 {
     return m_ptr == other.m_ptr;
+}
+
+std::string handle::repr() const
+{
+    auto py_str = PyObject_Repr(m_ptr);
+    auto res = PyUnicode_AsUTF8(py_str);
+    Py_XDECREF(py_str);
+
+    return res;
 }
 
 handle::operator bool() const

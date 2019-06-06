@@ -8,6 +8,8 @@
 
 namespace foundation
 {
+namespace immutable
+{
 namespace detail
 {
 
@@ -35,4 +37,5 @@ inline count_t popcount(std::uint64_t x)
 }
 
 } // namespace detail
+} // namespace immutable
 } // namespace foundation

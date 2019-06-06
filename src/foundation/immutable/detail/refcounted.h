@@ -5,6 +5,8 @@
 
 namespace foundation
 {
+namespace immutable
+{
 namespace detail
 {
 
@@ -47,4 +49,5 @@ struct refcounted
 };
 
 } // namespace detail
+} // namespace immutable
 } // namespace foundation

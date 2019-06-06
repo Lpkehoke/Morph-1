@@ -1,3 +1,5 @@
+#include "python/test/internalsinspector.h"
+
 #include "python/module.h"
 #include "python/class.h"
 #include "python/trampoline.h"
@@ -219,6 +221,11 @@ MORPH_PYTHON_MODULE(_test, m, Morph Python test module)
         .def("say_hello", &abstract_class::say_hello)
         .def_abstract("say_abstract")
         .def("call_say_abstract", &abstract_class::call_say_abstract);
+    
+    py::class_<internals_inspector>(m, "InternalsInspector")
+        .def(py::init<>())
+        .def("instances_count", &internals_inspector::instances_count)
+        .def("dump_instances", &internals_inspector::dump_instances);
 }
 
 } // namespace test

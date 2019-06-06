@@ -11,12 +11,14 @@
 
 namespace foundation
 {
+namespace immutable
+{
 
 template <typename K,
           typename V,
           typename Hash = std::hash<K>,
           typename MemoryPolicy = detail::heap_memory_policy>
-class immutable_map
+class map
 {
   public:
     static constexpr detail::count_t branches = 6u;
@@ -53,21 +55,21 @@ class immutable_map
                                      equals_fn,
                                      branches>;
 
-    immutable_map()
+    map()
         : m_size(0u)
     {
         m_root = memory_t::template allocate<node_t>(1);
         memory_t::construct(m_root, typename node_t::inner_tag {});
     }
 
-    immutable_map(const immutable_map& other)
+    map(const map& other)
         : m_root(other.m_root)
         , m_size(other.m_size)
     {
         m_root->inc();
     }
 
-    immutable_map(immutable_map&& other)
+    map(map&& other)
         : m_root(nullptr)
         , m_size(0u)
     {
@@ -75,7 +77,7 @@ class immutable_map
         std::swap(m_size, other.m_size);
     }
 
-    immutable_map& operator=(immutable_map other)
+    map& operator=(map other)
     {
         std::swap(other.m_root, m_root);
         std::swap(other.m_size, m_size);
@@ -100,7 +102,7 @@ class immutable_map
         return get(key);
     }
 
-    immutable_map set(key_t key, value_t value) const
+    map set(key_t key, value_t value) const
     {
         auto hash = Hash {}(key);
 
@@ -111,13 +113,13 @@ class immutable_map
 
         if (res)
         {
-            return immutable_map {res, m_size + 1};
+            return map {res, m_size + 1};
         }
 
         return *this;
     }
 
-    immutable_map erase(const key_t& key) const
+    map erase(const key_t& key) const
     {
         auto hash = Hash {}(key);
 
@@ -125,7 +127,7 @@ class immutable_map
 
         if (auto n = std::get_if<node_t*>(&res))
         {
-            return immutable_map {*n, m_size - 1};
+            return map {*n, m_size - 1};
         }
         else if (auto v = std::get_if<data_t>(&res))
         {
@@ -140,7 +142,7 @@ class immutable_map
         return m_size;
     }
 
-    bool operator==(const immutable_map& other) const
+    bool operator==(const map& other) const
     {
         if (m_root == other.m_root)
         {
@@ -150,7 +152,7 @@ class immutable_map
         return *m_root == *other.m_root;
     }
 
-    ~immutable_map()
+    ~map()
     {
         if (m_root && m_root->dec())
         {
@@ -160,7 +162,7 @@ class immutable_map
     }
 
   private:
-    immutable_map(node_t* root, std::size_t size)
+    map(node_t* root, std::size_t size)
         : m_root(root)
         , m_size(size)
     {}
@@ -169,4 +171,5 @@ class immutable_map
     std::size_t m_size;
 };
 
+} // namespace immutable
 } // namespace foundation

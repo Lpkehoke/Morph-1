@@ -6,7 +6,16 @@ import _test as test
 class TestInheritance(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.inspector = test.InternalsInspector()
+
+    def assert_inst_count(self, expected_inst_count):
+        inst_count = self.inspector.instances_count()
+        self.assertEqual(
+            expected_inst_count,
+            inst_count,
+            f"Registered instances count doesn't match expected one\n"
+            f"Registered instances dump:\n"
+            f"{self.inspector.dump_instances()}")
 
     def test_multiple_inheritance(self):
         class Derived(test.DummyA, test.DummyB, test.DummyC, test.DummyD):
@@ -21,6 +30,10 @@ class TestInheritance(unittest.TestCase):
         self.assertEqual("B", d.say_b())
         self.assertEqual("C", d.say_c())
         self.assertEqual("D", d.say_d())
+
+        self.assert_inst_count(2)
+        del d
+        self.assert_inst_count(1)
 
     def test_diamond_inheritance(self):
         class DerivedA(test.DummyA):
@@ -44,3 +57,6 @@ class TestInheritance(unittest.TestCase):
         self.assertEqual("B", d.say_b())
         self.assertEqual("C", d.say_c())
         self.assertEqual("D", d.say_d())
+        self.assert_inst_count(2)
+        del d
+        self.assert_inst_count(1)

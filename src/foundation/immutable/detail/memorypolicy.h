@@ -5,6 +5,8 @@
 
 namespace foundation
 {
+namespace immutable
+{
 namespace detail
 {
 
@@ -36,4 +38,5 @@ struct heap_memory_policy
 };
 
 } // namespace detail
+} // namespace immutable
 } // namespace foundation

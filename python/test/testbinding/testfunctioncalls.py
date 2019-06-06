@@ -7,24 +7,44 @@ class TestReturnValues(unittest.TestCase):
 
     def setUp(self):
         self.test_return_values = test.TestReturnValues()
+        self.inspector = test.InternalsInspector()
+
+    def assert_inst_count(self, expected_inst_count):
+        inst_count = self.inspector.instances_count()
+        self.assertEqual(
+            expected_inst_count,
+            inst_count,
+            f"Registered instances count doesn't match expected one\n"
+            f"Registered instances dump:\n"
+            f"{self.inspector.dump_instances()}")
 
     def test_return_cpp_int(self):
         res = self.test_return_values.get_one_int()
-        self.assertEqual(res, 1)
+        self.assertEqual(1, res)
+        self.assert_inst_count(2)
 
     def test_return_cpp_string(self):
         res = self.test_return_values.get_hello_string()
-        self.assertEqual(res, "hello")
-
-    def test_return_cpp_nocopyable(self):
-        res1 = self.test_return_values.get_nocopyable()
-        res2 = self.test_return_values.get_nocopyable()
-        self.assertFalse(res1 is res2)
+        self.assertEqual("hello", res)
+        self.assert_inst_count(2)
 
     def test_return_cpp_nocopyable_ref(self):
         res1 = self.test_return_values.get_nocopyable_ref()
         res2 = self.test_return_values.get_nocopyable_ref()
         self.assertTrue(res1 is res2)
+        self.assert_inst_count(3)
+        del res1
+        del res2
+        self.assert_inst_count(2)
+
+    def test_return_cpp_nocopyable(self):
+        res1 = self.test_return_values.get_nocopyable()
+        res2 = self.test_return_values.get_nocopyable()
+        self.assertFalse(res1 is res2)
+        self.assert_inst_count(4)
+        del res1
+        del res2
+        self.assert_inst_count(2)
 
 
 class TestParameterValues(unittest.TestCase):

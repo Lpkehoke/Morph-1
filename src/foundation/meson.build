@@ -1,10 +1,13 @@
+subdir('heterogeneous')
+
 foundation_src = [
+    'murmurhash.cpp',
     'taskqueue.cpp'
 ]
 
 foundation = static_library(
     'foundation',
-    foundation_src,
+    [foundation_src, heterogeneous_src],
     include_directories: root_include_dir,
     dependencies: [tbb_dep]
 )

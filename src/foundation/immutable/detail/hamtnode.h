@@ -13,6 +13,8 @@
 
 namespace foundation
 {
+namespace immutable
+{
 namespace detail
 {
 
@@ -765,4 +767,5 @@ struct hamt_node : public refcounted
 };
 
 } // namespace detail
+} // namespace immutable
 } // namespace foundation

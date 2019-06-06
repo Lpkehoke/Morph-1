@@ -3,14 +3,27 @@
 #include "python/pythonapi.h"
 #include "python/internals.h"
 
-#include <typeinfo>
-#include <unordered_map>
-#include <typeindex>
+#include "foundation/heterogeneous/box.h"
+
+#include <memory>
+#include <stdexcept>
 
 namespace py
 {
 namespace detail
 {
+
+void dealloc_instance(PyObject* self)
+{
+    auto inst = reinterpret_cast<instance*>(self);
+
+    unregister_instance(inst);
+    
+    std::destroy_at(&inst->m_held);
+
+    auto type = Py_TYPE(self);
+    type->tp_free(self);
+}
 
 PyObject* new_instance(PyTypeObject* subtype, PyObject*, PyObject*)
 {
@@ -18,8 +31,8 @@ PyObject* new_instance(PyTypeObject* subtype, PyObject*, PyObject*)
 
     if (res)
     {
-        auto inst = reinterpret_cast<instance*>(subtype->tp_alloc(subtype, 0));
-        inst->m_holder = nullptr;
+        auto inst = reinterpret_cast<instance*>(res);
+        new (&inst->m_held) instance::held_t();
     }
 
     return res;
@@ -40,38 +53,6 @@ int init_instance(PyObject* self , PyObject*, PyObject*)
         "%s has no constructor defined.",
         type->tp_name);
     return -1;
-}
-
-
-int traverse_instance(PyObject* self, visitproc visit, void* arg)
-{
-    auto inst = reinterpret_cast<instance*>(self);
-    Py_VISIT(inst->m_dict);
-    return 0;
-}
-
-
-int clear_instance(PyObject* self)
-{
-    auto inst = reinterpret_cast<instance*>(self);
-    Py_CLEAR(inst->m_dict);
-    return 0;
-}
-
-
-void dealloc_instance(PyObject* self)
-{
-    auto inst = reinterpret_cast<instance*>(self);
-
-    if (inst->m_holder)
-    {
-        internals().unregister_instance(inst->m_holder->m_held.get());
-        delete inst->m_holder;
-        inst->m_holder = nullptr;
-    }
-
-    auto type = Py_TYPE(self);
-    type->tp_free(self);
 }
 
 
@@ -118,15 +99,15 @@ type_object make_new_type(const char* name, object nmspace)
     
     auto args = PyTuple_Pack(3, name_obj, bases, nmspace.ptr());
 
-    auto heap_type = reinterpret_cast<PyHeapTypeObject*>(
+    auto type = reinterpret_cast<PyTypeObject*>(
         abc_meta->tp_new(abc_meta, args, nullptr));
     
-    if (!heap_type)
+    if (!type)
     {
         throw std::runtime_error("Failed to allocate new type.");
     }
 
-    auto type = reinterpret_cast<PyTypeObject*>(heap_type);
+    type->tp_dealloc = dealloc_instance;
 
     if (PyType_Ready(type))
     {
