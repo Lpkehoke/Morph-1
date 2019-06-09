@@ -113,6 +113,8 @@ class Iterator
             {
                 transform_to_end();
             }
+
+            m_way_to_root.pop();
         }
     }
 
