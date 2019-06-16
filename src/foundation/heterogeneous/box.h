@@ -12,31 +12,31 @@ namespace foundation
 namespace heterogeneous
 {
 
-class box
+class Box
 {
   public:
-    box()
+    Box()
       : m_pointee_type(nullptr)
     {}
 
-    box(const box& other)
+    Box(const Box& other)
       : m_pointee_type(other.m_pointee_type)
       , m_held(other.m_held)
     {}
 
-    box(box&& other)
+    Box(Box&& other)
     {
         m_pointee_type = std::exchange(other.m_pointee_type, nullptr);
         std::swap(m_held, other.m_held);
     }
 
     template <typename T>
-    box(T* src, bool take_ownership)
+    Box(T* src, bool take_ownership)
     {
         initialize(src, take_ownership);
     }
 
-    box& operator=(box&& other)
+    Box& operator=(Box&& other)
     {
         if (other.m_held != m_held)
         {
@@ -67,7 +67,7 @@ class box
     }
 
     template <typename T>
-    bool is_() const
+    bool is() const
     {
         return m_pointee_type
             ? m_pointee_type->m_tinfo->hash_code() == typeid(T).hash_code()
@@ -80,10 +80,10 @@ class box
     }
 
   private:
-    using holder_t = std::shared_ptr<void>;
+    using Holder = std::shared_ptr<void>;
 
-    const type_info*    m_pointee_type;
-    holder_t            m_held;
+    const TypeInfo*     m_pointee_type;
+    Holder              m_held;
 };
 
 } // namespace heterogeneous

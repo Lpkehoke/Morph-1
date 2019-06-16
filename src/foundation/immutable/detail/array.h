@@ -13,14 +13,14 @@ namespace detail
 {
 
 template <typename MemoryPolicy, typename T>
-inline T* make_array(count_t size)
+T* make_array(CountType size)
 {
     assert(size > 0);
     return MemoryPolicy::template allocate<T>(size);
 }
 
 template <typename MemoryPolicy, typename T>
-inline T* make_array(T* first, count_t size)
+T* make_array(T* first, CountType size)
 {
     auto last       = first + size;
     auto dest_first = make_array<MemoryPolicy, T>(size);
@@ -31,10 +31,10 @@ inline T* make_array(T* first, count_t size)
 }
 
 template <typename MemoryPolicy, typename T, typename... Args>
-inline T* make_array_insert(
+T* make_array_insert(
     T*          first,
-    count_t     size,
-    count_t     position,
+    CountType   size,
+    CountType   position,
     Args&&...   args)
 {
     assert((position <= size) && (position >= 0));
@@ -55,10 +55,10 @@ inline T* make_array_insert(
 }
 
 template <typename MemoryPolicy, typename T, typename... Args>
-inline T* make_array_replace(
+T* make_array_replace(
     T*          first,
-    count_t     size,
-    count_t     position,
+    CountType   size,
+    CountType   position,
     Args&&...   args)
 {
     assert((position < size) && (position >= 0));
@@ -79,7 +79,7 @@ inline T* make_array_replace(
 }
 
 template <typename MemoryPolicy, typename T, typename... Args>
-inline T* make_array_erase(T* first, count_t size, count_t position)
+T* make_array_erase(T* first, CountType size, CountType position)
 {
     assert((position < size) && (position >= 0));
 

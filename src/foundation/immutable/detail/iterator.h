@@ -18,32 +18,33 @@ namespace detail
 {
 
 template <
-    typename data_t,
-    typename Key,
-    typename MemoryPolicy,
-    typename Hash,
-    typename Equals,
-    count_t  B>
-class iterator_t
+    typename    Data,
+    typename    Key,
+    typename    MemoryPolicy,
+    typename    Hash,
+    typename    Equals,
+    CountType   B>
+class Iterator
 {
-    using node_type = hamt_node<data_t,
-                                Key,
-                                MemoryPolicy,
-                                Hash,
-                                Equals,
-                                B>;
+    using Node = HamtNode<Data,
+                          Key,
+                          MemoryPolicy,
+                          Hash,
+                          Equals,
+                          B>;
 
   public:
-    explicit iterator_t() = default;
-    explicit iterator_t(node_type* const* root)
+    explicit Iterator() = default;
+    explicit Iterator(Node* const* root)
     {
-        if ((*root)->children_size() != 0 || (*root)->data_size() != 0) {
+        if ((*root)->children_size() != 0 || (*root)->data_size() != 0)
+        {
             m_way_to_root[++m_current_depth] = root;
             discent();
         }
     }
 
-    bool operator==(const iterator_t& other) const noexcept
+    bool operator==(const Iterator& other) const noexcept
     {
         return
             (m_current_depth == -1 &&
@@ -52,7 +53,7 @@ class iterator_t
             std::tie(other.m_current_depth, other.m_way_to_root[m_current_depth], other.m_data_id);
     }
 
-    bool operator!=(const iterator_t& other) const noexcept
+    bool operator!=(const Iterator& other) const noexcept
     {
         return !(*this == other);
     }
@@ -65,14 +66,14 @@ class iterator_t
 
     auto operator++(int) noexcept
     {
-        iterator_t result(*this);
+        Iterator result(*this);
 
         operator++();
 
         return result;
     }
 
-    const data_t& operator*() const
+    const Data& operator*() const
     { // error on dereference end iterator
         return *((*m_way_to_root[m_current_depth])->data() + m_data_id);
     }
@@ -146,7 +147,7 @@ class iterator_t
         return (m_current_depth == -1);
     }
 
-    std::array<node_type* const*, max_depth<B>> m_way_to_root;
+    std::array<Node* const*, max_depth<B>>      m_way_to_root;
     int                                         m_current_depth = -1;
     std::size_t                                 m_data_id       =  0;
 };
@@ -162,17 +163,17 @@ template <typename T,
           typename MemoryPolicy,
           typename Hash,
           typename Equals,
-          foundation::immutable::detail::count_t B>
-struct iterator_traits<foundation::immutable::detail::iterator_t<T,
+          foundation::immutable::detail::CountType B>
+struct iterator_traits<foundation::immutable::detail::Iterator<T,
                                                       Key,
                                                       MemoryPolicy,
                                                       Hash,
                                                       Equals,
                                                       B>>
 {
-    using value_type = const T;
-    using pointer = const T*;
-    using reference	= const T&;
+    using ValueType = const T;
+    using Pointer = const T*;
+    using Reference	= const T&;
 };
 
 }

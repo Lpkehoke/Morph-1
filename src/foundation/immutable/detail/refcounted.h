@@ -10,19 +10,19 @@ namespace immutable
 namespace detail
 {
 
-struct refcounted
+struct Refcounted
 {
-    using refcount_t = std::atomic<std::uint64_t>;
+    using Refcount = std::atomic<std::uint64_t>;
 
-    refcounted()
-        : m_ref_count(new refcount_t(1))
+    Refcounted()
+        : m_ref_count(new Refcount(1))
     {}
 
-    refcounted(const refcounted& other)
+    Refcounted(const Refcounted& other)
         : m_ref_count(other.m_ref_count)
     {}
 
-    ~refcounted()
+    ~Refcounted()
     {
         if (is_unique())
         {
@@ -45,7 +45,7 @@ struct refcounted
         return m_ref_count->load() == 1u;
     }
 
-    refcount_t* m_ref_count;
+    Refcount* m_ref_count;
 };
 
 } // namespace detail

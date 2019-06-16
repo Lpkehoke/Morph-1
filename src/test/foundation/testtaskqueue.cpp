@@ -16,14 +16,14 @@ using namespace testing;
 using namespace std::chrono_literals;
 
 
-class async_callback {
+class AsyncCallback {
 public:
     virtual void on_data(int seed) = 0;
 
-    virtual ~async_callback() {}
+    virtual ~AsyncCallback() {}
 };
 
-class mock_callback : public async_callback {
+class MockCallback : public AsyncCallback {
 public:
     MOCK_METHOD1(on_data, void(int));
 };
@@ -31,8 +31,8 @@ public:
 
 TEST(task_queue, test_serial_execution)
 {
-    task_queue queue;
-    auto cb_mock = std::make_shared<StrictMock<mock_callback>>();
+    TaskQueue queue;
+    auto cb_mock = std::make_shared<StrictMock<MockCallback>>();
 
     std::atomic<int> previous_seed(0);
     std::atomic<bool> ready(false);
@@ -75,8 +75,8 @@ TEST(task_queue, test_serial_execution)
 
 TEST(task_queue, test_post_when_queue_is_busy)
 {
-    task_queue queue;
-    auto cb_mock = std::make_shared<StrictMock<mock_callback>>();
+    TaskQueue queue;
+    auto cb_mock = std::make_shared<StrictMock<MockCallback>>();
 
     std::atomic<bool> ready(false);
     std::mutex mutex;

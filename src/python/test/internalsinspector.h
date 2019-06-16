@@ -10,12 +10,12 @@
 namespace test
 {
 
-class internals_inspector
+class InternalsInspector
 {
   public:
     std::size_t instances_count() const
     {
-        std::set<py::detail::instance*> unique_instances;
+        std::set<py::detail::Instance*> unique_instances;
 
         const auto& instances_collection = py::detail::internals().m_registered_instances;
 
@@ -40,7 +40,7 @@ class internals_inspector
         {
             // TODO: make repr() a free function?
             auto str = inst_pair_itr->second
-                ? py::handle(reinterpret_cast<PyObject*>(inst_pair_itr->second)).repr()
+                ? py::Handle(reinterpret_cast<PyObject*>(inst_pair_itr->second)).repr()
                 : "<Null handle>";
             
             oss << str << " (cpp types: ";

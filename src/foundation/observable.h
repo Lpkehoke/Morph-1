@@ -1,128 +1,108 @@
 #pragma once
 
-#include <functional>
-#include <utility>
+#include "foundation/immutable/map.h"
+
+#include <cstdint>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <mutex>
-#include <list>
-
-#include "foundation/immutable/map.h"
+#include <utility>
 
 namespace foundation
 {
 
 template <typename... Args>
-class observable : public std::enable_shared_from_this<observable<Args...>>
+class Observable : public std::enable_shared_from_this<Observable<Args...>>
 {
   public:
-    using on_update_fn = std::function<void(Args...)>;
-    using store_t      = std::list<on_update_fn>;
+    using OnUpdateFn = std::function<void(Args...)>;
+    using SubscriptionKey = std::uint64_t;
+    using Subscribers = foundation::immutable::Map<SubscriptionKey, OnUpdateFn>;
 
-    class disposable final
+    class Disposable
     {
-        public:
-            using weak_t = decltype(
-                std::declval<observable<Args...>>().weak_from_this()
-            );
+      public:
+        using DisposeFn = std::function<void ()>;
 
-            using it_t   = decltype(
-                std::declval<store_t>().cend()
-            );
+        explicit Disposable(DisposeFn on_dispose)
+          : m_on_dispose(on_dispose)
+        {}
 
-            explicit disposable(
-                const store_t& store,
-                weak_t         weak,
-                it_t           it,
-                std::mutex*    mutex
-            );
+        void dispose()
+        {
+            if (m_on_dispose)
+            {
+                m_on_dispose();
+            }
+        }
 
-            void dispose() noexcept;
-        private:
-            store_t     m_subscribers;
-            weak_t      m_weak_this;
-            it_t        m_function_it;
-            std::mutex* m_mutex;
-            bool        m_function_is_alive;
+      private:
+        DisposeFn m_on_dispose;
     };
 
-    disposable subscribe(on_update_fn&& on_update) noexcept;
+    Observable()
+      : m_next_subscription_key(0u)
+    {}
 
-    observable(const observable&)            = default;
-    observable& operator=(const observable&) = default;
-    observable(observable&&)                 = default;
-    observable& operator=(observable&&)      = default;
-    virtual ~observable()                    = default;
+    Disposable subscribe(OnUpdateFn on_update) noexcept;
 
   protected:
-    observable() = default;
     void notify(Args... args) const;
+    void unsubscribe(SubscriptionKey key);
 
   private:
-    store_t             m_subscribers;
+    SubscriptionKey     m_next_subscription_key;
+    Subscribers         m_subscribers;
     mutable std::mutex  m_mutex;
-
 };
 
 template <typename... Args>
-typename observable<Args...>::disposable observable<Args...>::subscribe(on_update_fn&& on_update) noexcept
+typename Observable<Args...>::Disposable Observable<Args...>::subscribe(OnUpdateFn on_update) noexcept
 {
-    std::lock_guard<std::mutex> guard(m_mutex);
-    m_subscribers.emplace_back(std::move(on_update));
+    std::lock_guard<std::mutex> lock(m_mutex);
 
-    return disposable(
-        m_subscribers,
-        this->weak_from_this(),
-        --m_subscribers.cend(),
-        &m_mutex
-    );
+    auto key = m_next_subscription_key++;
+    m_subscribers = m_subscribers.set(key, std::move(on_update));
+
+    return Disposable(
+        [thisWeakPtr = this->weak_from_this(), key]()
+        {
+            if (const auto thisPtr = thisWeakPtr.lock())
+            {
+                thisPtr->unsubscribe(key);
+            }
+        });
 }
 
 template <typename... Args>
-void observable<Args...>::notify(Args... args) const
+void Observable<Args...>::notify(Args... args) const
 {
-    std::lock_guard<std::mutex> guard(m_mutex);
+    Subscribers subscribers;
 
-    for (const auto& cb : m_subscribers)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        subscribers = m_subscribers;
+    }
+
+    for (const auto& cb : subscribers)
     {
         try
         {
-            cb(args...);
+            cb.second(args...);
         }
-        catch(const std::exception& ex)
+        catch(const std::exception&)
         {
-            ex.what();
+            // TODO: proper error handling.
         }
-        catch ( ... )
-        {}
     }
 }
 
 template <typename... Args>
-observable<Args...>::disposable::disposable(
-    const store_t& store,
-    weak_t         weak,
-    it_t           it,
-    std::mutex*    mutex
-)
-  : m_subscribers(store)
-  , m_weak_this(weak)
-  , m_function_it(it)
-  , m_mutex(mutex)
-  , m_function_is_alive(true)
-{}
-
-template <typename... Args>
-void observable<Args...>::disposable::dispose() noexcept
+void Observable<Args...>::unsubscribe(SubscriptionKey key)
 {
-    if (m_function_is_alive && !m_weak_this.expired())
-    {
-        m_function_is_alive = false;
-
-        m_mutex->lock();
-        m_subscribers.erase(m_function_it);
-        m_mutex->unlock();
-    }
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_subscribers = m_subscribers.erase(key);
 }
 
 } // namespace foundation

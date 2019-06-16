@@ -3,11 +3,11 @@
 namespace ui
 {
 
-class application
+class Application
 {
   public:
-    application();
-    ~application();
+    Application();
+    ~Application();
 
     void render();
 };

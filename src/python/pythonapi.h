@@ -11,28 +11,28 @@ namespace py
 
 class type_object;
 
-class handle
+class Handle
 {
   public:
-    handle();
-    handle(PyObject* py_obj);
-    handle(const handle& other);
-    handle(handle&& other);
+    Handle();
+    Handle(PyObject* py_obj);
+    Handle(const Handle& other);
+    Handle(Handle&& other);
 
     PyObject* ptr();
 
-    handle& inc_ref();
-    handle& dec_ref();
+    Handle& inc_ref();
+    Handle& dec_ref();
 
     type_object type() const;
 
-    void setattr(const char* name, handle py_obj);
-    handle getattr(const char* name);
+    void setattr(const char* name, Handle py_obj);
+    Handle getattr(const char* name);
 
     template <typename... Args>
-    handle operator()(Args&&... args);
+    Handle operator()(Args&&... args);
 
-    bool is(handle other) const;
+    bool is(Handle other) const;
     std::string repr() const;
 
     operator bool() const;
@@ -41,42 +41,42 @@ class handle
    PyObject* m_ptr;
 };
 
-class object : public handle
+class Object : public Handle
 {
   public:
-    object();
-    object(PyObject* py_obj);
-    object(const object& other);
-    object(object&& other);
-    ~object();
+    Object();
+    Object(PyObject* py_obj);
+    Object(const Object& other);
+    Object(Object&& other);
+    ~Object();
 
-    object& operator=(const object& other);
+    Object& operator=(const Object& other);
 
-    object& inc_ref();
-    object& dec_ref();
+    Object& inc_ref();
+    Object& dec_ref();
 
-    handle release();
+    Handle release();
 
     operator bool() const;
 };
 
-class str : public object
+class Str : public Object
 {
 };
 
-class tuple : public object
+class Tuple : public Object
 {
   public:
-    tuple();
+    Tuple();
 
-    tuple(PyObject* py_obj);
+    Tuple(PyObject* py_obj);
 
-    handle operator[](std::size_t idx) const;
+    Handle operator[](std::size_t idx) const;
 
     std::size_t size() const;
 };
 
-class type_object : public object
+class type_object : public Object
 {
   public:
     type_object();
@@ -89,22 +89,22 @@ class type_object : public object
     
     PyTypeObject* type_ptr();
 
-    tuple mro();
+    Tuple mro();
 };
 
-class list : public object
+class List : public Object
 {
 };
 
-class dict : public object
+class Dict : public Object
 {
 };
 
-class capsule : public object
+class Capsule : public Object
 {
   public:
     template <typename T, typename Dtor>
-    capsule(T* ptr, Dtor dtor)
+    Capsule(T* ptr, Dtor dtor)
     {
         auto dtor_fn = static_cast<void (*)(T*)>(dtor);
 

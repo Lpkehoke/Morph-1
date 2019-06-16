@@ -10,7 +10,7 @@ namespace immutable
 namespace detail
 {
 
-struct heap_memory_policy
+struct HeapMemoryPolicy
 {
     template <typename T>
     static T* allocate(std::size_t size)

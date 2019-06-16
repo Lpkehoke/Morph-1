@@ -12,29 +12,26 @@ using namespace foundation;
 using namespace testing;
 using namespace std;
 
-using state_t = vector<int>;
+using State = vector<int>;
 
-class A_obs : public observable<const state_t*>
+class AObs : public Observable<State>
 {
   public:
-    A_obs() = default;
-    ~A_obs() override = default;
-
     void add(int a)
     {
         m_state.push_back(a);
-        notify(&m_state);
+        notify(m_state);
     }
 
   private:
-    state_t m_state;
+    State m_state;
 };
 
 TEST(observable_test, observable_simple_working)
 {
     int b = 0;
-    auto a = make_shared<A_obs>();
-    a->subscribe([&b](auto*)
+    auto a = make_shared<AObs>();
+    a->subscribe([&b](auto)
     {
         b++;
     });
@@ -46,10 +43,10 @@ TEST(observable_test, observable_simple_working)
 
 TEST(observable_test, observable_change_state)
 {
-    auto a = make_shared<A_obs>();
-    const state_t* a_state = nullptr;
+    auto a = make_shared<AObs>();
+    State a_state;
 
-    a->subscribe([&a_state](auto* state)
+    a->subscribe([&a_state](const auto& state)
     {
         a_state = state;
     });
@@ -59,11 +56,11 @@ TEST(observable_test, observable_change_state)
         a->add(i);
     }
 
-    a->subscribe([&a_state](auto* state)
+    a->subscribe([&a_state](const auto& state)
     {
-        for (size_t i = 0; i < state->size(); ++i)
+        for (size_t i = 0; i < state.size(); ++i)
         {
-            ASSERT_EQ((*state)[i], (*a_state)[i]);
+            ASSERT_EQ(state[i], a_state[i]);
         }
     });
 
@@ -75,17 +72,17 @@ TEST(observable_test, observable_change_state)
     std::this_thread::sleep_for(0.1s);
 }
 
-TEST(observable_test, observable_duble_unsubscribe)
+TEST(observable_test, observable_double_unsubscribe)
 {
-    auto a = make_shared<A_obs>();
-    auto un_1 = a->subscribe([](auto state){});
+    auto a = make_shared<AObs>();
+    auto un_1 = a->subscribe([](const auto& state){});
     un_1.dispose();
     un_1.dispose();
 }
 
 TEST(observable_test, unsubscribe_after_delete_observable)
 {
-    auto a = make_shared<A_obs>();
+    auto a = make_shared<AObs>();
     auto un_1 = a->subscribe([](auto state){});
     a.reset();
     un_1.dispose();

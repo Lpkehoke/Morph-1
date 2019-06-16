@@ -24,27 +24,28 @@ TEST(logger_test, working_logger)
         "fatal"
     };
 
-    vector<severity_t> logs_severity
+    vector<Severity> logs_severity
     {
-        severity_t::trace,
-        severity_t::debug,
-        severity_t::info,
-        severity_t::warning,
-        severity_t::error,
-        severity_t::fatal
+        Severity::Trace,
+        Severity::Debug,
+        Severity::Info,
+        Severity::Warning,
+        Severity::Error,
+        Severity::Fatal
     };
 
-    auto a = logger::create_logger();
+    auto a = Logger::create();
 
-    auto un = a->subscribe([&logs_str, &logs_severity] (const state_t& state)
-    {
-        size_t size_state = static_cast<size_t>(state.size());
-        for (size_t i = 0; i < size_state; ++i)
+    auto un = a->subscribe(
+        [&logs_str, &logs_severity](const State& state)
         {
-            ASSERT_EQ(state[i].message, logs_str[i]);
-            ASSERT_EQ(state[i].severity, logs_severity[i]);
-        }
-    });
+            size_t size_state = static_cast<size_t>(state.size());
+            for (size_t i = 0; i < size_state; ++i)
+            {
+                ASSERT_EQ(state[i].message, logs_str[i]);
+                ASSERT_EQ(state[i].severity, logs_severity[i]);
+            }
+        });
 
     for(size_t i = 0; i < logs_str.size(); ++i)
     {

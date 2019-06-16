@@ -26,12 +26,12 @@ inline std::uint64_t fmix64(std::uint64_t k)
 
 } // namespace
 
-murmur_hash::murmur_hash() noexcept
+MurmurHash::MurmurHash() noexcept
     : m_h1(0u)
     , m_h2(0u)
 {}
 
-void murmur_hash::append(const void* payload, std::size_t len) noexcept
+void MurmurHash::append(const void* payload, std::size_t len) noexcept
 {
     const std::uint8_t* data = reinterpret_cast<const std::uint8_t*>(payload);
     const std::size_t nblocks = len / 16;
@@ -114,7 +114,7 @@ void murmur_hash::append(const void* payload, std::size_t len) noexcept
     m_h2 += m_h1;
 }
 
-std::size_t murmur_hash::as_64bit() const noexcept
+std::size_t MurmurHash::as_64bit() const noexcept
 {
     return m_h1 ^ (m_h2 + 0x9e3779b9 + (m_h1 << 6) + (m_h1 >> 2));
 }

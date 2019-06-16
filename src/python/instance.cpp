@@ -15,7 +15,7 @@ namespace detail
 
 void dealloc_instance(PyObject* self)
 {
-    auto inst = reinterpret_cast<instance*>(self);
+    auto inst = reinterpret_cast<Instance*>(self);
 
     unregister_instance(inst);
     
@@ -31,15 +31,15 @@ PyObject* new_instance(PyTypeObject* subtype, PyObject*, PyObject*)
 
     if (res)
     {
-        auto inst = reinterpret_cast<instance*>(res);
-        new (&inst->m_held) instance::held_t();
+        auto inst = reinterpret_cast<Instance*>(res);
+        new (&inst->m_held) Instance::Held();
     }
 
     return res;
 }
 
 
-handle make_new_instance(PyTypeObject* subtype)
+Handle make_new_instance(PyTypeObject* subtype)
 {
     return new_instance(subtype, nullptr, nullptr);
 }
@@ -76,7 +76,7 @@ type_object make_new_base_class()
     type->tp_base = &PyBaseObject_Type;
     Py_XINCREF(&PyBaseObject_Type);
 
-    type->tp_basicsize = sizeof(instance);
+    type->tp_basicsize = sizeof(Instance);
 
     type->tp_new = new_instance;
     type->tp_init = init_instance;
@@ -89,7 +89,7 @@ type_object make_new_base_class()
 }
 
 
-type_object make_new_type(const char* name, object nmspace)
+type_object make_new_type(const char* name, Object nmspace)
 {  
     auto base_class = internals().base_class();
     auto abc_meta = internals().abc_meta().type_ptr();
@@ -118,7 +118,7 @@ type_object make_new_type(const char* name, object nmspace)
 }
 
 
-handle abstract_method_new() 
+Handle abstract_method_new() 
 {
     auto type = internals().abstract_method_type();
 
@@ -185,7 +185,7 @@ type_object make_abstract_method_type()
     return reinterpret_cast<PyTypeObject*>(type);
 }
 
-object make_abstract_method_instance(const char* name)
+Object make_abstract_method_instance(const char* name)
 {
     auto method = abstract_method_new();
 

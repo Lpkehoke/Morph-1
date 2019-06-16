@@ -5,26 +5,26 @@ namespace py
 namespace detail
 {
 
-internals_t& internals()
+Internals& internals()
 {
-    static internals_t::ptr_t ptr;
+    static Internals::Ptr ptr;
 
     if (!ptr)
     {
-        ptr.reset(new internals_t {});
+        ptr.reset(new Internals {});
     }
 
     return *ptr;
 }
 
-void register_instance(const void* value, instance* inst)
+void register_instance(const void* value, Instance* inst)
 {
     internals().m_registered_instances.emplace(
         static_cast<const void*>(value),
         inst);
 }
 
-void unregister_instance(instance* inst)
+void unregister_instance(Instance* inst)
 {
     for (const auto& inst_data_pair : inst->m_held)
     {    
@@ -46,7 +46,7 @@ void unregister_instance(instance* inst)
     }
 }
 
-python_type_info* get_python_type_info(handle py_type)
+PythonTypeInfo* get_python_type_info(Handle py_type)
 {
     auto& i = internals();
     auto itr = i.m_registered_types_py.find(py_type.ptr());

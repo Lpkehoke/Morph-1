@@ -10,35 +10,35 @@ namespace foundation
 namespace heterogeneous
 {
 
-struct type_info
+struct TypeInfo
 {
-    using ctor_t = void* (void*);
+    using Ctor = void* (void*);
 
-    type_info(
+    TypeInfo(
         const std::type_info*   tinfo,
-        ctor_t*                 copy_ctor,
-        ctor_t*                 move_ctor)
+        Ctor*                   copy_ctor,
+        Ctor*                   move_ctor)
       : m_tinfo(tinfo)
       , m_copy_ctor(copy_ctor)
       , m_move_ctor(move_ctor)
     {}
 
     const std::type_info*   m_tinfo;
-    ctor_t*                 m_copy_ctor;
-    ctor_t*                 m_move_ctor;
+    Ctor*                   m_copy_ctor;
+    Ctor*                   m_move_ctor;
 };
 
 
 template <typename T, typename = void>
-struct copy_ctor_for_
+struct CopyCtorFor
 {
-    static constexpr type_info::ctor_t* value = nullptr;
+    static constexpr TypeInfo::Ctor* value = nullptr;
 };
 
 template <typename T>
-struct copy_ctor_for_<T, typename std::enable_if_t<std::is_copy_constructible_v<T>>>
+struct CopyCtorFor<T, typename std::enable_if_t<std::is_copy_constructible_v<T>>>
 {
-    static constexpr type_info::ctor_t* value = [](void* other_ptr)
+    static constexpr TypeInfo::Ctor* value = [](void* other_ptr)
         {
             auto this_ptr_typed = reinterpret_cast<T*>(other_ptr);
             auto res = new T(static_cast<const T&>(*this_ptr_typed));;
@@ -47,15 +47,15 @@ struct copy_ctor_for_<T, typename std::enable_if_t<std::is_copy_constructible_v<
 };
 
 template <typename T, typename = void>
-struct move_ctor_for_
+struct MoveCtorFor
 {
-    static constexpr type_info::ctor_t* value = nullptr;
+    static constexpr TypeInfo::Ctor* value = nullptr;
 };
 
 template <typename T>
-struct move_ctor_for_<T, typename std::enable_if_t<std::is_move_constructible_v<T>>>
+struct MoveCtorFor<T, typename std::enable_if_t<std::is_move_constructible_v<T>>>
 {
-    static constexpr type_info::ctor_t* value = [](void* other_ptr)
+    static constexpr TypeInfo::Ctor* value = [](void* other_ptr)
         {
             auto this_ptr_typed = reinterpret_cast<T*>(other_ptr);
             auto res = new T(static_cast<T&&>(*this_ptr_typed));
@@ -64,10 +64,10 @@ struct move_ctor_for_<T, typename std::enable_if_t<std::is_move_constructible_v<
 };
 
 template <typename T>
-static const type_info type_info_for_ = type_info(
+static const auto type_info_for = TypeInfo(
     &typeid(T),
-    copy_ctor_for_<T>::value,
-    move_ctor_for_<T>::value
+    CopyCtorFor<T>::value,
+    MoveCtorFor<T>::value
 );
 
 } // namespace heterogeneous

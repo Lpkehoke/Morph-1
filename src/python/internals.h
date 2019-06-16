@@ -24,25 +24,25 @@ namespace detail
  *  Holds information neccessary for casting/loading
  *  python values from instances.
  */
-struct python_type_info
+struct PythonTypeInfo
 {
-    using type_info_t = foundation::heterogeneous::type_info;
-    using conversions_set_t = std::unordered_set<std::type_index>;
+    using TypeInfo = foundation::heterogeneous::TypeInfo;
+    using Conversions = std::unordered_set<std::type_index>;
 
-    const type_info_t*  m_cpp_tinfo;
-    conversions_set_t   m_conversions;
+    const TypeInfo*     m_cpp_tinfo;
+    Conversions         m_conversions;
     type_object         m_py_type;
 };
 
 /**
  *  Internal structure keeping track of all created types and instances.
  */
-struct internals_t
+struct Internals
 {
-    using ptr_t = std::unique_ptr<internals_t>;
-    using type_map_t = std::unordered_map<std::type_index, python_type_info*>;
-    using py_type_map_t = std::unordered_map<PyObject*, python_type_info*>;
-    using inst_map_t = std::unordered_multimap<const void*, instance*>;
+    using Ptr = std::unique_ptr<Internals>;
+    using TypeMap = std::unordered_map<std::type_index, PythonTypeInfo*>;
+    using PyTypeMap = std::unordered_map<PyObject*, PythonTypeInfo*>;
+    using InstMap = std::unordered_multimap<const void*, Instance*>;
 
     type_object& base_class()
     {
@@ -58,7 +58,7 @@ struct internals_t
     {
         if (!m_abc_module)
         {
-            handle m = PyImport_ImportModule("abc");
+            Handle m = PyImport_ImportModule("abc");
             if (!m)
             {
                 throw std::runtime_error("Failed to load abc module.");
@@ -85,25 +85,25 @@ struct internals_t
         return m_abstract_method_type;
     }
 
-    type_map_t      m_registered_types_cpp;
-    py_type_map_t   m_registered_types_py;
-    inst_map_t      m_registered_instances;
+    TypeMap      m_registered_types_cpp;
+    PyTypeMap   m_registered_types_py;
+    InstMap      m_registered_instances;
     type_object     m_base_class;
     type_object     m_abstract_method_type;
-    object          m_abc_module;
+    Object          m_abc_module;
 };
 
-extern internals_t& internals();
+extern Internals& internals();
 
 template <typename T>
 void register_python_type(
-    type_object                         py_type_obj,
-    python_type_info::conversions_set_t conversions)
+    type_object                     py_type_obj,
+    PythonTypeInfo::Conversions     conversions)
 {
     using namespace foundation::heterogeneous;
 
-    auto* py_tinfo = new python_type_info();
-    py_tinfo->m_cpp_tinfo = &type_info_for_<T>;
+    auto* py_tinfo = new PythonTypeInfo();
+    py_tinfo->m_cpp_tinfo = &type_info_for<T>;
     py_tinfo->m_py_type = py_type_obj;
     py_tinfo->m_conversions = std::move(conversions);
 
@@ -112,7 +112,7 @@ void register_python_type(
 }
 
 template <typename T>
-python_type_info* get_python_type_info()
+PythonTypeInfo* get_python_type_info()
 {
     auto& i = internals();
     auto itr = i.m_registered_types_cpp.find(typeid(T));
@@ -125,27 +125,27 @@ python_type_info* get_python_type_info()
     return itr->second;
 }
 
-python_type_info* get_python_type_info(handle py_type);
+PythonTypeInfo* get_python_type_info(Handle py_type);
 
-void register_instance(const void* value, instance* inst);
+void register_instance(const void* value, Instance* inst);
 
 template <typename T>
-void register_instance(const T* value, instance* inst)
+void register_instance(const T* value, Instance* inst)
 {
     register_instance(static_cast<const void*>(value), inst);
 }
 
-void unregister_instance(instance* inst);
+void unregister_instance(Instance* inst);
 
 template <typename T>
-handle get_registered_instance(T* held)
+Handle get_registered_instance(T* held)
 {
     // There might be several instances holding one pointer.
     // e.g. a class with a single member returning it by reference.
     auto range = internals().m_registered_instances.equal_range(static_cast<void*>(held));
     for (auto inst_itr = range.first; inst_itr != range.second; ++inst_itr)
     {
-        instance* inst = inst_itr->second;
+        Instance* inst = inst_itr->second;
         
         auto data_itr = inst->m_held.find(typeid(T));
         if (data_itr != inst->m_held.end())
@@ -154,7 +154,7 @@ handle get_registered_instance(T* held)
         }
     }
 
-    return handle();
+    return Handle();
 }
 
 } // namespace detail

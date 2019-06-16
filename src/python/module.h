@@ -11,7 +11,7 @@
 extern "C"                                              \
 {                                                       \
 void module_ ## name ## _init(py::module& var);         \
-PyObject* PyInit_ ## name()                             \
+MORPH_API extern PyObject* PyInit_ ## name()            \
 {                                                       \
     auto var = py::module(#name, #doc);                 \
     module_ ## name ## _init(var);                      \
@@ -23,7 +23,7 @@ void module_ ## name ## _init(py::module& var)
 namespace py
 {
 
-class module : public object
+class module : public Object
 {
   public:
     module(const char* name, const char* doc = nullptr)
@@ -43,10 +43,10 @@ class module : public object
     }
 
     module(const module& other)
-      : object(other)
+      : Object(other)
     {}
 
-    void add_object(const char* name, object py_obj)
+    void add_object(const char* name, Object py_obj)
     {
         PyModule_AddObject(m_ptr, name, py_obj.release().ptr());
     }

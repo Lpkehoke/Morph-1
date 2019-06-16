@@ -13,21 +13,21 @@ namespace immutable
 namespace detail
 {
 
-using bitmap_t = std::uint64_t;
-using count_t = std::uint32_t;
-using shift_t = std::uint32_t;
-using hash_t = std::size_t;
+using BitmapType = std::uint64_t;
+using CountType = std::uint32_t;
+using ShiftType = std::uint32_t;
+using HashType = std::size_t;
 
-template <count_t B, typename T = std::size_t>
-constexpr T max_depth = (sizeof(hash_t) * 8u + B - 1u) / B;
+template <CountType B, typename T = std::size_t>
+constexpr T max_depth = (sizeof(HashType) * 8u + B - 1u) / B;
 
-template <count_t B, typename T = shift_t>
+template <CountType B, typename T = ShiftType>
 constexpr T max_shift = max_depth<B, T> * B;
 
-template <count_t B, typename T = bitmap_t>
+template <CountType B, typename T = BitmapType>
 constexpr T mask = (1ul << B) - 1ul;
 
-inline count_t popcount(std::uint64_t x)
+inline CountType popcount(std::uint64_t x)
 {
 #ifdef _WIN32
 	return __popcnt64(x);

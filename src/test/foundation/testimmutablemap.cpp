@@ -12,7 +12,7 @@ using namespace foundation::immutable;
 using namespace testing;
 
 template <typename T>
-struct collision_hash
+struct CollisionHash
 {
     std::size_t operator()(const T&) const
     {
@@ -27,7 +27,7 @@ struct collision_hash
 TEST(immutable_detail, make_array)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array<detail::heap_memory_policy, int>(a, 7);
+    int* b    = detail::make_array<detail::HeapMemoryPolicy, int>(a, 7);
 
     for (auto i = 0; i < 7; ++i)
     {
@@ -38,7 +38,7 @@ TEST(immutable_detail, make_array)
 TEST(immutable_detail, make_array_insert_begin)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_insert<detail::heap_memory_policy, int>(a, 7, 0, 666);
+    int* b    = detail::make_array_insert<detail::HeapMemoryPolicy, int>(a, 7, 0, 666);
 
     ASSERT_EQ(666, b[0]);
     for (auto i = 1; i < 8; ++i)
@@ -50,7 +50,7 @@ TEST(immutable_detail, make_array_insert_begin)
 TEST(immutable_detail, make_array_insert_middle)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_insert<detail::heap_memory_policy, int>(a, 7, 3, 666);
+    int* b    = detail::make_array_insert<detail::HeapMemoryPolicy, int>(a, 7, 3, 666);
 
     for (auto i = 0; i < 3; ++i)
     {
@@ -68,7 +68,7 @@ TEST(immutable_detail, make_array_insert_middle)
 TEST(immutable_detail, make_array_insert_end)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_insert<detail::heap_memory_policy, int>(a, 7, 7, 666);
+    int* b    = detail::make_array_insert<detail::HeapMemoryPolicy, int>(a, 7, 7, 666);
 
     for (auto i = 0; i < 7; ++i)
     {
@@ -81,7 +81,7 @@ TEST(immutable_detail, make_array_insert_end)
 TEST(immutable_detail, make_array_replace_begin)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_replace<detail::heap_memory_policy, int>(a, 7, 0, 666);
+    int* b    = detail::make_array_replace<detail::HeapMemoryPolicy, int>(a, 7, 0, 666);
 
     ASSERT_EQ(666, b[0]);
     for (auto i = 1; i < 7; ++i)
@@ -93,7 +93,7 @@ TEST(immutable_detail, make_array_replace_begin)
 TEST(immutable_detail, make_array_replace_middle)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_replace<detail::heap_memory_policy, int>(a, 7, 3, 666);
+    int* b    = detail::make_array_replace<detail::HeapMemoryPolicy, int>(a, 7, 3, 666);
 
     for (auto i = 0; i < 7; ++i)
     {
@@ -110,7 +110,7 @@ TEST(immutable_detail, make_array_replace_middle)
 TEST(immutable_detail, make_array_replace_end)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_replace<detail::heap_memory_policy, int>(a, 7, 6, 666);
+    int* b    = detail::make_array_replace<detail::HeapMemoryPolicy, int>(a, 7, 6, 666);
 
     for (auto i = 0; i < 6; ++i)
     {
@@ -123,7 +123,7 @@ TEST(immutable_detail, make_array_replace_end)
 TEST(immutable_detail, make_array_erase_begin)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_erase<detail::heap_memory_policy, int>(a, 7, 0);
+    int* b    = detail::make_array_erase<detail::HeapMemoryPolicy, int>(a, 7, 0);
 
     for (auto i = 0; i < 6; ++i)
     {
@@ -134,7 +134,7 @@ TEST(immutable_detail, make_array_erase_begin)
 TEST(immutable_detail, make_array_erase_middle)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_erase<detail::heap_memory_policy, int>(a, 7, 3);
+    int* b    = detail::make_array_erase<detail::HeapMemoryPolicy, int>(a, 7, 3);
 
     for (auto i = 0; i < 3; ++i)
     {
@@ -150,7 +150,7 @@ TEST(immutable_detail, make_array_erase_middle)
 TEST(immutable_detail, make_array_erase_end)
 {
     int  a[7] = {1, 3, 2, 8, 11, 17, 21};
-    int* b    = detail::make_array_erase<detail::heap_memory_policy, int>(a, 7, 6);
+    int* b    = detail::make_array_erase<detail::HeapMemoryPolicy, int>(a, 7, 6);
 
     for (auto i = 0; i < 6; ++i)
     {
@@ -164,10 +164,10 @@ TEST(immutable_detail, make_array_erase_end)
 
 TEST(immutable_map, basic_set)
 {
-    using map_t = map<int, int>;
-    map_t m;
+    using MapType = Map<int, int>;
+    MapType m;
 
-    std::function<map_t(int)> set = [m](int value)
+    std::function<MapType(int)> set = [m](int value)
     {
         return m.set(value, value);
     };
@@ -193,8 +193,8 @@ TEST(immutable_map, basic_set)
 
 TEST(immutable_map, collision_set)
 {
-    using map_t = map<int, int, collision_hash<int>>;
-    map_t m;
+    using MapType = Map<int, int, CollisionHash<int>>;
+    MapType m;
 
     for (int i = 0; i < 64; ++i)
     {
@@ -212,8 +212,8 @@ TEST(immutable_map, collision_set)
 
 TEST(immutable_map, basic_erase)
 {
-    using map_t = map<int, int>;
-    map_t m;
+    using MapType = Map<int, int>;
+    MapType m;
 
     for (int i = 0; i < 64 * 16; ++i)
     {
@@ -245,8 +245,8 @@ TEST(immutable_map, basic_erase)
 
 TEST(immutable_map, collision_erase)
 {
-    using map_t = map<int, int, collision_hash<int>>;
-    map_t m;
+    using MapType = Map<int, int, CollisionHash<int>>;
+    MapType m;
 
     for (int i = 0; i < 64; ++i)
     {
@@ -280,7 +280,7 @@ TEST(immutable_map, collision_erase)
 
 TEST(immutable_map, iterator_common_function)
 {
-    map<int, int> a;
+    Map<int, int> a;
 
     ASSERT_TRUE(a.begin() == a.end());
 
@@ -296,8 +296,8 @@ TEST(immutable_map, iterator_common_function)
 TEST(immutable_map, ranged_for_iteration)
 {
     const int num_el = 64 * 64 * 64;
-    using map_t = map<int, int>;
-    map_t m;
+    using MapType = Map<int, int>;
+    MapType m;
 
     for (int i = 0; i < num_el; ++i)
     {
@@ -316,8 +316,8 @@ TEST(immutable_map, ranged_for_iteration)
 
 TEST(immutable_map, ranged_for_iteration_empty_map)
 {
-    using map_t = map<int, int>;
-    map_t m;
+    using MapType = Map<int, int>;
+    MapType m;
 
     int counter = 0;
     for ([[maybe_unused]] auto p : m)

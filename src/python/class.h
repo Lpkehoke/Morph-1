@@ -14,26 +14,26 @@ namespace py
 {
 
 template <typename T>
-struct base_class {};
+struct BaseClass {};
 
 namespace detail
 {
 
 template <typename Class, typename T>
-struct handle_base_class_impl
+struct HandleBaseClassImpl
 {
-    using type_set_t = detail::python_type_info::conversions_set_t;
+    using Conversions = detail::PythonTypeInfo::Conversions;
 
-    static void handle(type_set_t& conversions)
+    static void handle(Conversions& conversions)
     {}
 };
 
 template <typename Class, typename T>
-struct handle_base_class_impl<Class, base_class<T>>
+struct HandleBaseClassImpl<Class, BaseClass<T>>
 {
-    using type_set_t = detail::python_type_info::conversions_set_t;
+    using Conversions = detail::PythonTypeInfo::Conversions;
 
-    static void handle(type_set_t& conversions)
+    static void handle(Conversions& conversions)
     {
         static_assert(std::is_base_of_v<T, Class>);
         conversions.insert(typeid(T));
@@ -41,14 +41,14 @@ struct handle_base_class_impl<Class, base_class<T>>
 };
 
 template <typename Class, typename... Types>
-struct handle_base_class
+struct HandleBaseClass
 {
-    using type_set_t = detail::python_type_info::conversions_set_t;
+    using Conversions = detail::PythonTypeInfo::Conversions;
 
-    static type_set_t handle()
+    static Conversions handle()
     {
-        type_set_t res;
-        (handle_base_class_impl<Class, Types>::handle(res),...);
+        Conversions res;
+        (HandleBaseClassImpl<Class, Types>::handle(res),...);
         return res;
     }
 };
@@ -57,42 +57,42 @@ struct handle_base_class
 
 
 template <typename Class, typename... Options>
-class class_
+class ExposeClass
 {
   public:
-    class_(module scope, const char* name)
+    ExposeClass(module scope, const char* name)
       : m_name(name)
       , m_scope(scope)
       , m_namespace(PyDict_New())
     {}
 
-    ~class_()
+    ~ExposeClass()
     {
         auto type = detail::make_new_type(m_name, m_namespace);
         m_scope.add_object(m_name, type);
 
-        auto conversions = detail::handle_base_class<Class, Options...>::handle();
+        auto conversions = detail::HandleBaseClass<Class, Options...>::handle();
         detail::register_python_type<Class>(type, std::move(conversions));
     }
 
     template <typename Func>
-    class_& def(
+    ExposeClass& def(
         const char*         name,
         Func&&              fn,
         return_value_policy policy = return_value_policy::copy)
     {
-        detail::cpp_function(name, m_namespace, policy, std::forward<Func>(fn));
+        detail::CppFunction(name, m_namespace, policy, std::forward<Func>(fn));
         return *this;
     }
 
     template <typename... Args>
-    class_& def(init<Args...>)
+    ExposeClass& def(Init<Args...>)
     {
-        detail::cpp_function(init<Class, Args...> {}, m_namespace);
+        detail::CppFunction(Init<Class, Args...> {}, m_namespace);
         return *this;
     }
 
-    class_& def_abstract(const char* name)
+    ExposeClass& def_abstract(const char* name)
     {
         auto meth = detail::make_abstract_method_instance(name);
 
@@ -111,7 +111,7 @@ class class_
     module      m_scope;
 
     // TODO: use dict wrapper instead.
-    object      m_namespace;
+    Object      m_namespace;
 };
 
 } // namespace py

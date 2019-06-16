@@ -10,41 +10,40 @@
 namespace core
 {
 
-enum class severity_t
+enum class Severity
 {
-    trace,
-    debug,
-    info,
-    warning,
-    error,
-    fatal
+    Trace,
+    Debug,
+    Info,
+    Warning,
+    Error,
+    Fatal
 };
 
-struct log_record_t
+struct LogRecord
 {
-    std::string                           message;
-    severity_t                            severity;
-    std::chrono::system_clock::time_point timestamp;
+    std::string                             message;
+    Severity                                severity;
+    std::chrono::system_clock::time_point   timestamp;
 };
 
-using state_t = std::vector<log_record_t>;
+using State = std::vector<LogRecord>;
 
-class logger : public foundation::observable< state_t >
+class Logger : public foundation::Observable<State>
 {
   public:
-    static std::shared_ptr<logger> create_logger() noexcept;
-    ~logger() override;
+    static std::shared_ptr<Logger> create() noexcept;
+    ~Logger();
 
-    void log(severity_t severity, const std::string& message);
-
+    void log(Severity severity, std::string message);
 
   private:
-    logger();
+    Logger();
 
-    void post_record_to_queue(log_record_t&& lr);
+    void post_record_to_queue(LogRecord&& lr);
 
-    struct impl_t;
-    impl_t* impl;
+    struct Impl;
+    Impl* m_impl;
 };
 
 } // namespace core

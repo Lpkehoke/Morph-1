@@ -1,8 +1,7 @@
 root_include_dir = include_directories('.')
 
-hidden_visibility_args = ['-fvisibility=hidden']
-
 subdir('foundation')
+subdir('vk')
 subdir('ui')
 subdir('core')
 subdir('python')

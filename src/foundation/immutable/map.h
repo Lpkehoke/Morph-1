@@ -15,69 +15,66 @@ namespace foundation
 namespace immutable
 {
 
-template <typename K,
-          typename V,
-          typename Hash = std::hash<K>,
-          typename MemoryPolicy = detail::heap_memory_policy>
-class map
+template <typename Key,
+          typename Value,
+          typename Hash = std::hash<Key>,
+          typename MemoryPolicy = detail::HeapMemoryPolicy>
+class Map
 {
   public:
-    static constexpr detail::count_t branches = 6u;
-    using key_t = K;
-    using value_t = V;
-    using data_t = std::pair<const key_t, value_t>;
-    using memory_t = MemoryPolicy;
+    static constexpr detail::CountType branches = 6u;
+    using Data = std::pair<const Key, Value>;
 
-    struct hash_fn
+    struct HashFn
     {
-        detail::hash_t operator()(const data_t& value) const
+        detail::HashType operator()(const Data& value) const
         {
             return Hash {}(value.first);
         }
     };
 
-    struct equals_fn
+    struct EqualsFn
     {
-        bool operator()(const data_t& lhs, const data_t& rhs) noexcept
+        bool operator()(const Data& lhs, const Data& rhs) noexcept
         {
             return lhs.first == rhs.first;
         }
 
-        bool operator()(const data_t& lhs, const key_t& rhs) noexcept
+        bool operator()(const Data& lhs, const Key& rhs) noexcept
         {
             return lhs.first == rhs;
         }
     };
 
-    using node_t = detail::hamt_node<data_t,
-                                     key_t,
-                                     memory_t,
-                                     hash_fn,
-                                     equals_fn,
-                                     branches>;
+    using Node = detail::HamtNode<Data,
+                                  Key,
+                                  MemoryPolicy,
+                                  HashFn,
+                                  EqualsFn,
+                                  branches>;
 
-    using iterator_t  = detail::iterator_t<data_t,
-                                           key_t,
-                                           memory_t,
-                                           hash_fn,
-                                           equals_fn,
-                                           branches>;
+    using Iterator = detail::Iterator<Data,
+                                      Key,
+                                      MemoryPolicy,
+                                      HashFn,
+                                      EqualsFn,
+                                      branches>;
 
-    map()
+    Map()
         : m_size(0u)
     {
-        m_root = memory_t::template allocate<node_t>(1);
-        memory_t::construct(m_root, typename node_t::inner_tag {});
+        m_root = MemoryPolicy::template allocate<Node>(1);
+        MemoryPolicy::construct(m_root, typename Node::InnerTag {});
     }
 
-    map(const map& other)
+    Map(const Map& other)
         : m_root(other.m_root)
         , m_size(other.m_size)
     {
         m_root->inc();
     }
 
-    map(map&& other)
+    Map(Map&& other)
         : m_root(nullptr)
         , m_size(0u)
     {
@@ -85,14 +82,14 @@ class map
         std::swap(m_size, other.m_size);
     }
 
-    map& operator=(map other)
+    Map& operator=(Map other)
     {
         std::swap(other.m_root, m_root);
         std::swap(other.m_size, m_size);
         return *this;
     }
 
-    const value_t* get(const key_t& key) const
+    const Value* get(const Key& key) const
     {
         auto hash = Hash {}(key);
         auto res = m_root->get(key, hash, 0);
@@ -105,39 +102,39 @@ class map
         return nullptr;
     }
 
-    const value_t* operator[](const key_t& key) const
+    const Value* operator[](const Key& key) const
     {
         return get(key);
     }
 
-    map set(key_t key, value_t value) const
+    Map set(Key key, Value value) const
     {
         auto hash = Hash {}(key);
 
         auto res = m_root->set(
-            data_t {std::move(key), std::move(value)},
+            Data {std::move(key), std::move(value)},
             hash,
             0);
 
         if (res)
         {
-            return map {res, m_size + 1};
+            return Map {res, m_size + 1};
         }
 
         return *this;
     }
 
-    map erase(const key_t& key) const
+    Map erase(const Key& key) const
     {
         auto hash = Hash {}(key);
 
         auto res = m_root->erase(key, hash, 0);
 
-        if (auto n = std::get_if<node_t*>(&res))
+        if (auto n = std::get_if<Node*>(&res))
         {
-            return map {*n, m_size - 1};
+            return Map {*n, m_size - 1};
         }
-        else if (auto v = std::get_if<data_t>(&res))
+        else if (auto v = std::get_if<Data>(&res))
         {
             assert(false && "Wrong return value.");
         }
@@ -150,17 +147,17 @@ class map
         return m_size;
     }
 
-    iterator_t begin() const noexcept
+    Iterator begin() const noexcept
     {
-        return iterator_t(&m_root);
+        return Iterator(&m_root);
     }
 
-    iterator_t end() const noexcept
+    Iterator end() const noexcept
     {
-        return iterator_t();
+        return Iterator();
     }
 
-    bool operator==(const map& other) const noexcept
+    bool operator==(const Map& other) const noexcept
     {
         if (m_root == other.m_root)
         {
@@ -170,22 +167,22 @@ class map
         return *m_root == *other.m_root;
     }
 
-    ~map()
+    ~Map()
     {
         if (m_root && m_root->dec())
         {
-            memory_t::destroy(m_root);
-            memory_t::deallocate(m_root, 1);
+            MemoryPolicy::destroy(m_root);
+            MemoryPolicy::deallocate(m_root, 1);
         }
     }
 
   private:
-    map(node_t* root, std::size_t size)
+    Map(Node* root, std::size_t size)
         : m_root(root)
         , m_size(size)
     {}
 
-    node_t*     m_root;
+    Node*       m_root;
     std::size_t m_size;
 };
 

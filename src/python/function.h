@@ -12,54 +12,54 @@ namespace py
 {
 
 template <typename... Args>
-struct init {};
+struct Init {};
 
 namespace detail
 {
 
 template <typename Return, typename... Args>
-struct fn_signature_t {};
+struct FnSignatureT {};
 
 
 template <typename T>
-struct fn_signature_from_lambda_impl_t {};
+struct FnSignatureFromLambdaImpl {};
 
 
 template <typename Return, typename Class, typename... Args>
-struct fn_signature_from_lambda_impl_t<Return (Class::*)(Args...)>
+struct FnSignatureFromLambdaImpl<Return (Class::*)(Args...)>
 {
-    using type = fn_signature_t<Return, Args...>;
+    using Type = FnSignatureT<Return, Args...>;
 };
 
 
 template <typename Return, typename Class, typename... Args>
-struct fn_signature_from_lambda_impl_t<Return (Class::*)(Args...) const>
+struct FnSignatureFromLambdaImpl<Return (Class::*)(Args...) const>
 {
-    using type = fn_signature_t<Return, Args...>;
+    using Type = FnSignatureT<Return, Args...>;
 };
 
 
 template <typename Fn>
-struct fn_signature_from_lambda_t
+struct FnSignatureFromLambdaT
 {
-    using operator_t = decltype(&Fn::operator());
-    using type = typename fn_signature_from_lambda_impl_t<operator_t>::type;
+    using OperatorType = decltype(&Fn::operator());
+    using Type = typename FnSignatureFromLambdaImpl<OperatorType>::type;
 };
 
 
 template <typename... Args, std::size_t... idx>
-std::tuple<Args...> python_to_cpp_tuple(tuple py_tuple, std::index_sequence<idx...>)
+std::tuple<Args...> python_to_cpp_tuple(Tuple py_tuple, std::index_sequence<idx...>)
 {
-    return std::tuple<Args...>(loader<Args>::load(py_tuple[idx])...);
+    return std::tuple<Args...>(Loader<Args>::load(py_tuple[idx])...);
 }
 
 
 template <typename... Args>
-tuple cpp_to_python_tuple_impl(Args&&... args)
+Tuple cpp_to_python_tuple_impl(Args&&... args)
 {
     auto py_tuple = PyTuple_Pack(
         sizeof...(Args),
-        caster<Args>::cast(
+        Caster<Args>::cast(
             std::forward<Args>(args),
             return_value_policy::copy).ptr()...); // TODO: use auto return value policy
     
@@ -68,7 +68,7 @@ tuple cpp_to_python_tuple_impl(Args&&... args)
 
 
 template <typename... Args>
-tuple cpp_to_python_tuple(std::tuple<Args...>&& cpp_tuple)
+Tuple cpp_to_python_tuple(std::tuple<Args...>&& cpp_tuple)
 {
     return std::apply(cpp_to_python_tuple_impl<Args...>, std::forward<std::tuple<Args...>>(cpp_tuple));
 }
@@ -79,24 +79,24 @@ tuple cpp_to_python_tuple(std::tuple<Args...>&& cpp_tuple)
  *  passes them to the function.
  */
 template <typename Fn, typename Return, typename... Args>
-struct function_invocation
+struct FunctionInvocation
 {
     template <bool is_none>
-    struct return_is_none_tag {};
+    struct ReturnIsNoneTag {};
 
-    using arg_index_t = std::index_sequence_for<Args...>;
-    using return_is_none_t = return_is_none_tag<std::is_void<Return>::value>;
+    using ArgIndex = std::index_sequence_for<Args...>;
+    using ReturnIsNone = ReturnIsNoneTag<std::is_void<Return>::value>;
 
-    static handle invoke(
+    static Handle invoke(
         Fn&                 fn,
-        tuple               py_args,
+        Tuple               py_args,
         return_value_policy policy)
     {
         try
         {
-            return invoke(fn, std::move(py_args), policy, return_is_none_t {});
+            return invoke(fn, std::move(py_args), policy, ReturnIsNone {});
         }
-        catch (const error_already_set&)
+        catch (const ErrorAlreadySet&)
         {
             return nullptr;
         }
@@ -107,26 +107,26 @@ struct function_invocation
         }
     }
 
-    static handle invoke(
+    static Handle invoke(
         Fn&                 fn, 
-        tuple               py_args,
+        Tuple               py_args,
         return_value_policy policy,
-        return_is_none_tag<false>)
+        ReturnIsNoneTag<false>)
     {
-        auto cpp_args = python_to_cpp_tuple<Args...>(py_args, arg_index_t {});
+        auto cpp_args = python_to_cpp_tuple<Args...>(py_args, ArgIndex {});
 
         Return res = std::apply(fn, std::move(cpp_args));
 
         return cast(std::forward<Return>(res), policy);
     }
 
-    static handle invoke(
+    static Handle invoke(
         Fn&                 fn, 
-        tuple               py_args,
+        Tuple               py_args,
         return_value_policy policy,
-        return_is_none_tag<true>)
+        ReturnIsNoneTag<true>)
     {
-        auto cpp_args = python_to_cpp_tuple<Args...>(py_args, arg_index_t {});
+        auto cpp_args = python_to_cpp_tuple<Args...>(py_args, ArgIndex {});
 
         std::apply(fn, std::move(cpp_args));
 
@@ -140,13 +140,13 @@ struct function_invocation
  *  function_record is held in capsule with python function objects.
  *  It is used to invoke actual cpp function during python function call.
  */
-struct function_record
+struct FunctionRecord
 {
-    using capture_t = std::aligned_storage<sizeof(void*)>;
-    using impl_t = handle (*)(void* capture, tuple args);
-    using dtor_t = void (*)(void*);
+    using Capture = std::aligned_storage<sizeof(void*)>;
+    using Impl = Handle (*)(void* capture, Tuple args);
+    using Dtor = void (*)(void*);
 
-    ~function_record()
+    ~FunctionRecord()
     {
         if (m_dtor)
         {
@@ -157,25 +157,25 @@ struct function_record
     return_value_policy m_policy;
 
     // Capture destructor.
-    dtor_t              m_dtor;
+    Dtor                m_dtor;
 
     // Wrapped cpp function (see cpp_function for details).
-    capture_t           m_capture;
+    Capture             m_capture;
 
     // Python method definition.
     PyMethodDef         m_def;
 };
 
-class cpp_function
+class CppFunction
 {
   public:
     /**
      *  Bind non-const class function.
      */
     template <typename Return, typename Class, typename... Args>
-    cpp_function(
+    CppFunction(
         const char*         name,
-        object              scope,
+        Object              scope,
         return_value_policy policy,
         Return (Class::*fn)(Args...))
     {
@@ -187,16 +187,16 @@ class cpp_function
             {
                 return (cls.*fn)(std::forward<Args>(args)...);
             },
-            fn_signature_t<Return, Class&, Args...> {});
+            FnSignatureT<Return, Class&, Args...> {});
     }
 
     /**
      *  Bind const class function.
      */
     template <typename Return, typename Class, typename... Args>
-    cpp_function(
+    CppFunction(
         const char*         name,
-        object              scope,
+        Object              scope,
         return_value_policy policy,
         Return (Class::* fn)(Args...) const)
     {
@@ -208,16 +208,16 @@ class cpp_function
             {
                 return (cls.*fn)(std::forward<Args>(args)...);
             },
-            fn_signature_t<Return, const Class&, Args...> {});
+            FnSignatureT<Return, const Class&, Args...> {});
     }
 
     /**
      *  Bind lambda object.
      */
     template <typename Fn>
-    cpp_function(
+    CppFunction(
         const char*         name,
-        object              scope,
+        Object              scope,
         return_value_policy policy,
         Fn&&                fn)
     {
@@ -226,16 +226,16 @@ class cpp_function
             std::move(scope),
             policy,
             std::forward<Fn>(fn),
-            typename fn_signature_from_lambda_t<Fn>::type {});
+            typename FnSignatureFromLambdaT<Fn>::type {});
     }
 
     /**
      *  Bind free function.
      */
     template <typename Return, typename... Args>
-    cpp_function(
+    CppFunction(
         const char*         name,
-        object              scope,
+        Object              scope,
         return_value_policy policy,
         Return (*fn)(Args...))
     {
@@ -247,14 +247,14 @@ class cpp_function
             {
                 return (*fn)(std::forward<Args>(args)...);
             },
-            fn_signature_t<Return, Args...> {});
+            FnSignatureT<Return, Args...> {});
     }
 
     /**
      *  Bind constructor.
      */
     template <typename Class, typename... Args>
-    cpp_function(init<Class, Args...>, object scope)
+    CppFunction(Init<Class, Args...>, Object scope)
     {
         initialize(
             "__init__",
@@ -264,27 +264,27 @@ class cpp_function
             {
                 new (this_ptr) Class(std::forward<Args>(args)...);
             },
-            fn_signature_t<void, Class*, Args...> {});
+            FnSignatureT<void, Class*, Args...> {});
     }
 
   private:
     template <typename Fn>
-    static constexpr bool can_embed = sizeof(Fn) <= sizeof(function_record::capture_t);
+    static constexpr bool can_embed = sizeof(Fn) <= sizeof(FunctionRecord::Capture);
 
     template <typename Fn, typename Return, typename... Args>
     void initialize(
         const char*         name,
-        object              scope,
+        Object              scope,
         return_value_policy policy,
         Fn&&                fn,
-        fn_signature_t<Return, Args...>)
+        FnSignatureT<Return, Args...>)
     {
-        function_record* fn_rec = new function_record();
+        FunctionRecord* fn_rec = new FunctionRecord();
         fn_rec->m_policy = policy;
 
-        capsule fn_rec_c(
+        Capsule fn_rec_c(
             fn_rec,
-            [](function_record* fn_rec)
+            [](FunctionRecord* fn_rec)
             {
                 delete fn_rec;
             });
@@ -319,7 +319,7 @@ class cpp_function
             };
         }
 
-        object meth = PyCFunction_New(&def, fn_rec_c.release().ptr());
+        Object meth = PyCFunction_New(&def, fn_rec_c.release().ptr());
 
         if (PyModule_Check(scope.ptr()))
         {
@@ -327,7 +327,7 @@ class cpp_function
         }
         else
         {
-            object inst_meth = PyInstanceMethod_New(meth.release().ptr());
+            Object inst_meth = PyInstanceMethod_New(meth.release().ptr());
             PyDict_SetItemString(scope.ptr(), name, inst_meth.ptr());
         }
     }
@@ -335,7 +335,7 @@ class cpp_function
     template <typename Fn, typename Return, typename... Args>
     static PyObject* dispatch(PyObject* fn_rec_c, PyObject* py_args)
     {
-        auto fn_rec = reinterpret_cast<function_record*>(PyCapsule_GetPointer(fn_rec_c, nullptr));
+        auto fn_rec = reinterpret_cast<FunctionRecord*>(PyCapsule_GetPointer(fn_rec_c, nullptr));
 
         if (sizeof...(Args) != PyTuple_Size(py_args))
         {
@@ -357,7 +357,7 @@ class cpp_function
             fn_ptr = *reinterpret_cast<Fn**>(&fn_rec->m_capture);
         }
 
-        return function_invocation<Fn, Return, Args...>::invoke(
+        return FunctionInvocation<Fn, Return, Args...>::invoke(
             *fn_ptr,
             py_args,
             fn_rec->m_policy).ptr();
@@ -367,7 +367,7 @@ class cpp_function
 } // namespace detail
 
 template <typename... Args>
-handle handle::operator()(Args&&... args)
+Handle Handle::operator()(Args&&... args)
 {
     auto py_args = detail::cpp_to_python_tuple(std::tuple {std::forward<Args>(args)...});
     return PyObject_Call(m_ptr, py_args.ptr(), nullptr);

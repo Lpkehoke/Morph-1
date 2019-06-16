@@ -21,14 +21,14 @@ namespace detail
 
 
 template <typename T>
-enable_if_copy_constructible_t<T, T*> copy(T* src)
+EnableIfCopyConstructible<T, T*> copy(T* src)
 {
     return new T(static_cast<const T&>(*src));
 }
 
 
 template <typename T>
-enable_if_not_copy_constructible_t<T, T*> copy(T* src)
+EnableIfNotCopyConstructible<T, T*> copy(T* src)
 {
     throw std::runtime_error("Can't copy type with missing copy constructor.");
 }
@@ -53,7 +53,7 @@ std::shared_ptr<void> make_uninitialized_value()
 
 
 template <typename T>
-std::shared_ptr<T> load_value(handle src)
+std::shared_ptr<T> load_value(Handle src)
 {
     if (!src)
     {
@@ -108,7 +108,7 @@ std::shared_ptr<T> load_value(handle src)
         throw std::runtime_error("Can't load the value.");
     }
 
-    auto inst = reinterpret_cast<detail::instance*>(src.ptr());
+    auto inst = reinterpret_cast<detail::Instance*>(src.ptr());
 
     auto itr = inst->m_held.find(*cpp_type_to_load);
     if (itr != inst->m_held.end())
@@ -141,17 +141,17 @@ enum class return_value_policy
 };
 
 template <typename T, typename = void>
-struct loader
+struct Loader
 {
-    using this_t = detail::clean_t<T>;
+    using ThisType = detail::CleanType<T>;
 
-    static T load(handle from)
+    static T load(Handle from)
     {
-        auto res = detail::load_value<this_t>(from);
+        auto res = detail::load_value<ThisType>(from);
 
         if (!res)
         {
-            throw load_error();
+            throw LoadError();
         }
 
         return detail::pointer_to_value<T>(res.get());
@@ -160,17 +160,17 @@ struct loader
 
 
 template <typename T>
-struct loader<std::shared_ptr<T>>
+struct Loader<std::shared_ptr<T>>
 {
-    using this_t = detail::clean_t<T>;
+    using ThisType = detail::CleanType<T>;
 
-    static std::shared_ptr<T> load(handle from)
+    static std::shared_ptr<T> load(Handle from)
     {
-        auto res = detail::load_value<this_t>(from);
+        auto res = detail::load_value<ThisType>(from);
 
         if (!res)
         {
-            throw load_error();
+            throw LoadError();
         }
 
         return res;
@@ -179,9 +179,9 @@ struct loader<std::shared_ptr<T>>
 
 
 template <typename T, typename = void>
-struct caster
+struct Caster
 {
-    static handle cast(T* src, return_value_policy ret_val_policy)
+    static Handle cast(T* src, return_value_policy ret_val_policy)
     {
         auto tinfo = detail::get_python_type_info<T>();
         if (!tinfo)
@@ -211,7 +211,7 @@ struct caster
             return nullptr;
         }
 
-        auto inst = reinterpret_cast<detail::instance*>(res.ptr());
+        auto inst = reinterpret_cast<detail::Instance*>(res.ptr());
         T* payload = nullptr;
         bool take_ownership = false;
 
@@ -254,25 +254,25 @@ struct caster
 //
 
 template<typename T>
-struct caster<T, typename std::enable_if_t<std::is_integral<T>::value>>
+struct Caster<T, typename std::enable_if_t<std::is_integral<T>::value>>
 {
-    static handle cast(T* src, return_value_policy)
+    static Handle cast(T* src, return_value_policy)
     {
         return PyLong_FromLongLong(*src);
     }
 };
 
 template<typename T>
-struct loader<T, typename std::enable_if_t<std::is_integral<T>::value>>
+struct Loader<T, typename std::enable_if_t<std::is_integral<T>::value>>
 {
-    static T load(handle from)
+    static T load(Handle from)
     {
         if (PyLong_Check(from.ptr()))
         {
             return static_cast<T>(PyLong_AsLongLong(from.ptr()));
         }
 
-        throw load_error {};
+        throw LoadError {};
     }
 };
 
@@ -282,29 +282,29 @@ struct loader<T, typename std::enable_if_t<std::is_integral<T>::value>>
 //
 
 template<typename T>
-struct caster<T,
+struct Caster<T,
               typename std::enable_if_t<
                     std::is_same_v<
                         typename std::remove_reference_t<T>,
                         std::string>>>
 {
-    static handle cast(std::string* src, return_value_policy)
+    static Handle cast(std::string* src, return_value_policy)
     {
         return PyUnicode_FromString(src->c_str());
     }
 };
 
 template<>
-struct loader<std::string>
+struct Loader<std::string>
 {
-    static std::string load(handle from)
+    static std::string load(Handle from)
     {
         if (PyUnicode_Check(from.ptr()))
         {
             return PyUnicode_AsUTF8(from.ptr());
         }
 
-        throw load_error {};
+        throw LoadError {};
     }
 };
 
@@ -314,36 +314,36 @@ struct loader<std::string>
 //
 
 template<>
-struct caster<bool>
+struct Caster<bool>
 {
-    static handle cast(bool* src, return_value_policy)
+    static Handle cast(bool* src, return_value_policy)
     {
-        handle res = *src ? Py_True : Py_False;
+        Handle res = *src ? Py_True : Py_False;
         return res.inc_ref();
     }
 };
 
 template<>
-struct loader<bool>
+struct Loader<bool>
 {
-    static bool load(handle from)
+    static bool load(Handle from)
     {
         if (PyBool_Check(from.ptr()))
         {
             return static_cast<bool>(PyLong_AsLong(from.ptr()));
         }
 
-        throw load_error {};
+        throw LoadError {};
     }
 };
 
 template <typename T>
-handle cast(T&& src, return_value_policy ret_val_policy)
+Handle cast(T&& src, return_value_policy ret_val_policy)
 {
-    using this_t = detail::clean_t<T>;
+    using ThisType = detail::CleanType<T>;
 
-    this_t* src_ptr = detail::value_to_pointer<T>(src);
-    return caster<this_t>::cast(src_ptr, ret_val_policy);
+    ThisType* src_ptr = detail::value_to_pointer<T>(src);
+    return Caster<ThisType>::cast(src_ptr, ret_val_policy);
 }
 
 } // namespace py

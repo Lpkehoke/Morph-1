@@ -10,11 +10,11 @@
 namespace test
 {
 
-struct dummy_a
+struct DummyA
 {
     std::string a;
 
-    dummy_a()
+    DummyA()
       : a("A")
     {}
 
@@ -24,11 +24,11 @@ struct dummy_a
     }
 };
 
-struct dummy_b
+struct DummyB
 {
     std::string b;
 
-    dummy_b()
+    DummyB()
       : b("B")
     {}
 
@@ -38,11 +38,11 @@ struct dummy_b
     }
 };
 
-struct dummy_c
+struct DummyC
 {
     std::string c;
 
-    dummy_c()
+    DummyC()
       : c("C")
     {}
 
@@ -52,11 +52,11 @@ struct dummy_c
     }
 };
 
-struct dummy_d
+struct DummyD
 {
     std::string d;
 
-    dummy_d()
+    DummyD()
       : d("D")
     {}
 
@@ -66,15 +66,15 @@ struct dummy_d
     }
 };
 
-class nocopyable
+class Nocopyable
 {
   public:
-    nocopyable()
+    Nocopyable()
       : m_foo("foo")
     {}
 
-    nocopyable(const nocopyable& other) = delete;
-    nocopyable(nocopyable&& other) = default;
+    Nocopyable(const Nocopyable& other) = delete;
+    Nocopyable(Nocopyable&& other) = default;
 
     std::string foo() const
     {
@@ -90,7 +90,7 @@ class nocopyable
     std::string m_foo;
 };
 
-class test_return_values
+class TestReturnValues
 {
   public:
     int get_one_int()
@@ -103,21 +103,21 @@ class test_return_values
         return "hello";
     }
 
-    nocopyable get_nocopyable()
+    Nocopyable get_nocopyable()
     {
-        return nocopyable();
+        return Nocopyable();
     }
 
-    nocopyable& get_nocopyable_ref()
+    Nocopyable& get_nocopyable_ref()
     {
         return m_nocopyable;
     }
 
   private:
-    nocopyable  m_nocopyable;
+    Nocopyable  m_nocopyable;
 };
 
-class test_parameter_values
+class TestParameterValues
 {
   public:
     bool take_one_int(int value)
@@ -130,7 +130,7 @@ class test_parameter_values
         return value == "hello";
     }
 
-    bool take_nocopyable_ref(nocopyable& value)
+    bool take_nocopyable_ref(Nocopyable& value)
     {
         if (value.foo() != "foo")
         {
@@ -141,7 +141,7 @@ class test_parameter_values
         return true;
     }
 
-    bool take_nocopyable_shared_ptr(std::shared_ptr<nocopyable> value)
+    bool take_nocopyable_shared_ptr(std::shared_ptr<Nocopyable> value)
     {
         if (!value || (value->foo() != "foo"))
         {
@@ -153,7 +153,7 @@ class test_parameter_values
     }
 };
 
-class abstract_class : public py::trampoline<abstract_class>
+class AbstractClass : public py::Trampoline<AbstractClass>
 {
   public:
     std::string say_hello()
@@ -169,63 +169,63 @@ class abstract_class : public py::trampoline<abstract_class>
     std::string say_abstract()
     {
         auto res = invoke_python_impl("say_abstract");
-        return py::loader<std::string>::load(res);
+        return py::Loader<std::string>::load(res);
     }
 };
 
 MORPH_PYTHON_MODULE(_test, m, Morph Python test module)
 {
-    py::class_<test_return_values>(m, "TestReturnValues")
-        .def(py::init<> {})
-        .def("get_one_int", &test_return_values::get_one_int)
-        .def("get_hello_string", &test_return_values::get_hello_string)
+    py::ExposeClass<TestReturnValues>(m, "TestReturnValues")
+        .def(py::Init<> {})
+        .def("get_one_int", &TestReturnValues::get_one_int)
+        .def("get_hello_string", &TestReturnValues::get_hello_string)
         .def(
             "get_nocopyable",
-            &test_return_values::get_nocopyable,
+            &TestReturnValues::get_nocopyable,
             py::return_value_policy::move)
         .def(
             "get_nocopyable_ref",
-            &test_return_values::get_nocopyable_ref,
+            &TestReturnValues::get_nocopyable_ref,
             py::return_value_policy::reference);
 
-    py::class_<test_parameter_values>(m, "TestParameterValues")
-        .def(py::init<> {})
-        .def("take_one_int", &test_parameter_values::take_one_int)
-        .def("take_hello_string", &test_parameter_values::take_hello_string)
-        .def("take_nocopyable_ref", &test_parameter_values::take_nocopyable_ref)
-        .def("take_nocopyable_shared_ptr", &test_parameter_values::take_nocopyable_shared_ptr);
+    py::ExposeClass<TestParameterValues>(m, "TestParameterValues")
+        .def(py::Init<> {})
+        .def("take_one_int", &TestParameterValues::take_one_int)
+        .def("take_hello_string", &TestParameterValues::take_hello_string)
+        .def("take_nocopyable_ref", &TestParameterValues::take_nocopyable_ref)
+        .def("take_nocopyable_shared_ptr", &TestParameterValues::take_nocopyable_shared_ptr);
     
-    py::class_<nocopyable>(m, "Nocopyable")
-        .def(py::init<>{})
-        .def("foo", &nocopyable::foo)
-        .def("set_foo", &nocopyable::set_foo);
+    py::ExposeClass<Nocopyable>(m, "Nocopyable")
+        .def(py::Init<>{})
+        .def("foo", &Nocopyable::foo)
+        .def("set_foo", &Nocopyable::set_foo);
 
-    py::class_<dummy_a>(m, "DummyA")
-        .def("say_a", &dummy_a::say_a)
-        .def(py::init<>());
+    py::ExposeClass<DummyA>(m, "DummyA")
+        .def("say_a", &DummyA::say_a)
+        .def(py::Init<>());
 
-    py::class_<dummy_b>(m, "DummyB")
-        .def("say_b", &dummy_b::say_b)
-        .def(py::init<>());
+    py::ExposeClass<DummyB>(m, "DummyB")
+        .def("say_b", &DummyB::say_b)
+        .def(py::Init<>());
 
-    py::class_<dummy_c>(m, "DummyC")
-        .def("say_c", &dummy_c::say_c)
-        .def(py::init<>());
+    py::ExposeClass<DummyC>(m, "DummyC")
+        .def("say_c", &DummyC::say_c)
+        .def(py::Init<>());
 
-    py::class_<dummy_d>(m, "DummyD")
-        .def("say_d", &dummy_d::say_d)
-        .def(py::init<>());
+    py::ExposeClass<DummyD>(m, "DummyD")
+        .def("say_d", &DummyD::say_d)
+        .def(py::Init<>());
 
-    py::class_<abstract_class>(m, "AbstractClass")
-        .def(py::init<>())
-        .def("say_hello", &abstract_class::say_hello)
+    py::ExposeClass<AbstractClass>(m, "AbstractClass")
+        .def(py::Init<>())
+        .def("say_hello", &AbstractClass::say_hello)
         .def_abstract("say_abstract")
-        .def("call_say_abstract", &abstract_class::call_say_abstract);
+        .def("call_say_abstract", &AbstractClass::call_say_abstract);
     
-    py::class_<internals_inspector>(m, "InternalsInspector")
-        .def(py::init<>())
-        .def("instances_count", &internals_inspector::instances_count)
-        .def("dump_instances", &internals_inspector::dump_instances);
+    py::ExposeClass<InternalsInspector>(m, "InternalsInspector")
+        .def(py::Init<>())
+        .def("instances_count", &InternalsInspector::instances_count)
+        .def("dump_instances", &InternalsInspector::dump_instances);
 }
 
 } // namespace test

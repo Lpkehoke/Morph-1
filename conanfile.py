@@ -9,21 +9,13 @@ class Morph(ConanFile):
 
     requires = (
         'eigen/3.3.7@conan/stable',
-        'glad/0.1.29@bincrafters/stable',
+        'volk/1.0.0@morph/dependencies',
         'gtest/1.8.1@bincrafters/stable',
         'sdl2/2.0.9@bincrafters/stable',
         'TBB/2019_U4@conan/stable'
     )
 
     generators = {}
-
-    def configure(self):
-        self.options['glad'].profile = 'core'
-        self.options['glad'].api_type = 'gl'
-        self.options['glad'].api_version = '4.1'
-        self.options['glad'].spec = 'gl'
-        self.options['glad'].no_loader = False
-        self.options['glad'].shared = True
 
     def create_meson_subprojects(self):
         subprojects_path = os.path.join(

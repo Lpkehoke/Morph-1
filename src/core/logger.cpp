@@ -15,35 +15,34 @@ using namespace foundation;
 namespace core
 {
 
-struct logger::impl_t
+struct Logger::Impl
 {
-    impl_t()
-      : m_task_queue(task_queue::priority_t::low)
+    Impl()
+      : m_task_queue(TaskQueue::Priority::Low)
     {}
 
-    state_t         m_state;
-    task_queue      m_task_queue;
+    State           m_state;
+    TaskQueue       m_task_queue;
     tbb::spin_mutex m_state_mutex;
 };
 
-logger::logger()
-  : impl(new impl_t())
+Logger::Logger()
+  : m_impl(new Impl())
 {}
 
-logger::~logger()
+Logger::~Logger()
 {
-    delete impl;
+    delete m_impl;
 }
 
-std::shared_ptr<logger> logger::create_logger() noexcept
+std::shared_ptr<Logger> Logger::create() noexcept
 {
-    struct make_shared_enabler : public logger {};
-    return std::make_shared<make_shared_enabler>();
+    return std::shared_ptr<Logger>(new Logger());
 }
 
-void logger::log(severity_t severity, const std::string& message)
+void Logger::log(Severity severity, std::string message)
 {
-    log_record_t lr;
+    LogRecord lr;
 
     lr.severity = severity;
     lr.message = message;
@@ -52,15 +51,17 @@ void logger::log(severity_t severity, const std::string& message)
     post_record_to_queue(std::move(lr));
 }
 
-void logger::post_record_to_queue(log_record_t&& lr)
+void Logger::post_record_to_queue(LogRecord&& lr)
 {
-    impl->m_task_queue.post([=]()
+    m_impl->m_task_queue.post([=]()
     {
-        tbb::spin_mutex::scoped_lock lock(impl->m_state_mutex);
-        impl->m_state.emplace_back(std::move(lr));
+        {
+            tbb::spin_mutex::scoped_lock lock(m_impl->m_state_mutex);
+            m_impl->m_state.push_back(std::move(lr));
+        }
 
-        lock.release();
-        notify(impl->m_state);
+        // TODO: not synchronized access to m_state.
+        notify(m_impl->m_state);
     });
 }
 

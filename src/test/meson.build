@@ -2,6 +2,7 @@ foundation_test_src = [
     'foundation/testimmutablemap.cpp',
     'foundation/testtaskqueue.cpp',
     'foundation/testobservable.cpp',
+    'foundation/testvector.cpp'
 ]
 
 core_test_src = [

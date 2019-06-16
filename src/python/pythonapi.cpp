@@ -8,47 +8,47 @@
 namespace py
 {
 
-handle::handle()
+Handle::Handle()
   : m_ptr(nullptr)
 {}
 
-handle::handle(PyObject* py_obj)
+Handle::Handle(PyObject* py_obj)
   : m_ptr(py_obj)
 {}
 
-handle::handle(const handle& other)
+Handle::Handle(const Handle& other)
   : m_ptr(other.m_ptr)
 {}
 
-handle::handle(handle&& other)
+Handle::Handle(Handle&& other)
   : m_ptr(nullptr)
 {
     std::swap(m_ptr, other.m_ptr);
 }
 
-PyObject* handle::ptr()
+PyObject* Handle::ptr()
 {
     return m_ptr;
 }
 
-handle& handle::inc_ref()
+Handle& Handle::inc_ref()
 {
     Py_XINCREF(m_ptr);
     return *this;
 }
 
-handle& handle::dec_ref()
+Handle& Handle::dec_ref()
 {
     Py_XDECREF(m_ptr);
     return *this;
 }
 
-type_object handle::type() const
+type_object Handle::type() const
 {
     return PyObject_Type(m_ptr);
 }
 
-void handle::setattr(const char* name, handle py_obj)
+void Handle::setattr(const char* name, Handle py_obj)
 {
     if (m_ptr)
     {
@@ -60,7 +60,7 @@ void handle::setattr(const char* name, handle py_obj)
     }
 }
 
-handle handle::getattr(const char* name)
+Handle Handle::getattr(const char* name)
 {
     if (m_ptr)
     {
@@ -68,7 +68,7 @@ handle handle::getattr(const char* name)
 
         if (!res)
         {
-            throw error_already_set();
+            throw ErrorAlreadySet();
         }
 
         return res;
@@ -79,12 +79,12 @@ handle handle::getattr(const char* name)
     }
 }
 
-bool handle::is(handle other) const
+bool Handle::is(Handle other) const
 {
     return m_ptr == other.m_ptr;
 }
 
-std::string handle::repr() const
+std::string Handle::repr() const
 {
     auto py_str = PyObject_Repr(m_ptr);
     auto res = PyUnicode_AsUTF8(py_str);
@@ -93,35 +93,35 @@ std::string handle::repr() const
     return res;
 }
 
-handle::operator bool() const
+Handle::operator bool() const
 {
     return m_ptr != nullptr;
 }
 
-object::object()
-  : handle()
+Object::Object()
+  : Handle()
 {}
 
-object::object(PyObject* py_obj)
-  : handle(py_obj)
+Object::Object(PyObject* py_obj)
+  : Handle(py_obj)
 {}
 
-object::object(const object& other)
-  : handle(other)
+Object::Object(const Object& other)
+  : Handle(other)
 {
     inc_ref();
 }
 
-object::object(object&& other)
-  : handle(std::move(other))
+Object::Object(Object&& other)
+  : Handle(std::move(other))
 {}
 
-object::~object()
+Object::~Object()
 {
     dec_ref();
 }
 
-object& object::operator=(const object& other)
+Object& Object::operator=(const Object& other)
 {
     if (!is(other))
     {
@@ -133,48 +133,48 @@ object& object::operator=(const object& other)
     return *this;
 }
 
-object& object::inc_ref()
+Object& Object::inc_ref()
 {
     Py_XINCREF(m_ptr);
     return *this;
 }
 
-object& object::dec_ref()
+Object& Object::dec_ref()
 {
     Py_XDECREF(m_ptr);
     return *this;
 }
 
-handle object::release()
+Handle Object::release()
 {
-    handle res(m_ptr);
+    Handle res(m_ptr);
     m_ptr = nullptr;
     return res;
 }
 
-object::operator bool() const
+Object::operator bool() const
 {
     return m_ptr != nullptr;
 }
 
 type_object::type_object()
-  : object()
+  : Object()
 {}
 
 type_object::type_object(PyObject* py_type_obj)
-  : object(py_type_obj)
+  : Object(py_type_obj)
 {}
 
 type_object::type_object(PyTypeObject* py_type_obj)
-  : object(reinterpret_cast<PyObject*>(py_type_obj))
+  : Object(reinterpret_cast<PyObject*>(py_type_obj))
 {}
 
 type_object::type_object(const type_object& other)
-  : object(other)
+  : Object(other)
 {}
 
 type_object::type_object(type_object&& other)
-  : object(std::move(other))
+  : Object(std::move(other))
 {}
 
 type_object& type_object::operator=(const type_object& other)
@@ -194,17 +194,17 @@ PyTypeObject* type_object::type_ptr()
     return reinterpret_cast<PyTypeObject*>(m_ptr);
 }
 
-tuple type_object::mro()
+Tuple type_object::mro()
 {
     return type_ptr()->tp_mro;
 }
 
-tuple::tuple()
-  : object()
+Tuple::Tuple()
+  : Object()
 {}
 
-tuple::tuple(PyObject* py_obj)
-  : object(py_obj)
+Tuple::Tuple(PyObject* py_obj)
+  : Object(py_obj)
 {
     if (!PyTuple_Check(py_obj))
     {
@@ -213,23 +213,23 @@ tuple::tuple(PyObject* py_obj)
     }
 }
 
-handle tuple::operator[](std::size_t idx) const
+Handle Tuple::operator[](std::size_t idx) const
 {
     if (m_ptr)
     {
         auto ref = PyTuple_GetItem(m_ptr, idx);
         if (ref)
         {
-            return handle(ref);
+            return Handle(ref);
         }
 
-        throw error_already_set();
+        throw ErrorAlreadySet();
     }
 
     return nullptr;
 }
 
-std::size_t tuple::size() const
+std::size_t Tuple::size() const
 {
     if (m_ptr)
     {

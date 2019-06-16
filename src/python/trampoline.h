@@ -10,11 +10,11 @@ namespace py
 {
 
 template <typename Derived>
-class trampoline
+class Trampoline
 {
   protected:
     template <typename... Args>
-    handle invoke_python_impl(const char* method_name, Args&&... args)
+    Handle invoke_python_impl(const char* method_name, Args&&... args)
     {
         auto py_obj = detail::get_registered_instance<Derived>(static_cast<Derived*>(this));
         

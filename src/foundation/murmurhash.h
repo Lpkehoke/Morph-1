@@ -10,10 +10,10 @@ namespace foundation
  *  Based on SMHasher code.
  *  "All MurmurHash versions are public domain software, and the author disclaims all copyright to their code."
  */
-class murmur_hash
+class MurmurHash
 {
   public:
-    murmur_hash() noexcept;
+    MurmurHash() noexcept;
 
     void append(const void* payload, std::size_t len) noexcept;
     
@@ -29,7 +29,7 @@ class murmur_hash
  *  as hash map keys.
  */
 template <typename T>
-struct hasher
+struct Hasher
 {
     std::size_t operator()(const T& value) const noexcept
     {

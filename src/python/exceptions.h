@@ -5,13 +5,13 @@
 namespace py
 {
 
-class error_already_set : public std::exception
+class ErrorAlreadySet : public std::exception
 {};
 
-class cast_error : public std::exception
+class CastError : public std::exception
 {};
 
-class load_error : public std::exception
+class LoadError : public std::exception
 {};
 
 } // namespace py

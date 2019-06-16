@@ -1,13 +1,21 @@
 #include "ui/application.h"
 
+#include "vk/vkrenderer.h"
+
+#include "foundation/vecor.h" 
+
 #include <SDL2/SDL.h>
 
+#include <iostream>
+
 #include <stdexcept>
+#include <vector>
+#include <utility>
 
 namespace ui
 {
 
-application::application()
+Application::Application()
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0)
     {
@@ -15,13 +23,31 @@ application::application()
     }
 }
 
-application::~application()
+Application::~Application()
 {
     SDL_Quit();
 }
 
-void application::render()
+void Application::render()
 {
+    SDL_Event e;
+
+    auto renderer = vk::RendererFactory::create();
+    renderer->initialize();
+
+    auto wnd = SDL_CreateWindow("Morph", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_VULKAN);
+    auto ctx = SDL_GL_CreateContext(wnd);
+
+    SDL_GL_SwapWindow(wnd);
+
+    while (true)
+    {
+        SDL_PollEvent(&e);
+        if (e.type == SDL_QUIT)
+        {
+            break;
+        }
+    }
 }
 
 } // namespace ui
