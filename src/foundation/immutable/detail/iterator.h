@@ -113,8 +113,16 @@ class Iterator
             {
                 transform_to_end();
             }
+        }
+    }
 
-            m_way_to_root.pop();
+    void discent() noexcept
+    {
+        auto current_node = m_way_to_root[m_current_depth];
+        while ((*current_node)->children_size())
+        {
+            current_node = (*current_node)->children();
+            m_way_to_root[++m_current_depth] = current_node;
         }
     }
 
