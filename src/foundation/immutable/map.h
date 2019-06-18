@@ -1,6 +1,7 @@
 #pragma once
 
 #include "detail/memorypolicy.h"
+#include "detail/iterator.h"
 #include "detail/hamtnode.h"
 
 #include <cstddef>
@@ -37,12 +38,12 @@ class map
 
     struct equals_fn
     {
-        bool operator()(const data_t& lhs, const data_t& rhs)
+        bool operator()(const data_t& lhs, const data_t& rhs) noexcept
         {
             return lhs.first == rhs.first;
         }
 
-        bool operator()(const data_t& lhs, const key_t& rhs)
+        bool operator()(const data_t& lhs, const key_t& rhs) noexcept
         {
             return lhs.first == rhs;
         }
@@ -54,6 +55,13 @@ class map
                                      hash_fn,
                                      equals_fn,
                                      branches>;
+
+    using iterator_t  = detail::iterator_t<data_t,
+                                           key_t,
+                                           memory_t,
+                                           hash_fn,
+                                           equals_fn,
+                                           branches>;
 
     map()
         : m_size(0u)
@@ -137,12 +145,22 @@ class map
         return *this;
     }
 
-    std::size_t size() const
+    std::size_t size() const noexcept
     {
         return m_size;
     }
 
-    bool operator==(const map& other) const
+    iterator_t begin() const noexcept
+    {
+        return iterator_t(&m_root);
+    }
+
+    iterator_t end() const noexcept
+    {
+        return iterator_t();
+    }
+
+    bool operator==(const map& other) const noexcept
     {
         if (m_root == other.m_root)
         {

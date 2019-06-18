@@ -30,17 +30,17 @@ struct refcounted
         }
     }
 
-    void inc()
+    void inc() noexcept
     {
         m_ref_count->fetch_add(1, std::memory_order_relaxed);
     }
 
-    bool dec()
+    bool dec() noexcept
     {
         return m_ref_count->fetch_sub(1, std::memory_order_release) == 1;
     }
 
-    bool is_unique() const
+    bool is_unique() const noexcept
     {
         return m_ref_count->load() == 1u;
     }

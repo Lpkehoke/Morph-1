@@ -101,72 +101,72 @@ struct hamt_node : public refcounted
         }
     }
 
-    auto& inner()
+    auto& inner() noexcept
     {
         return std::get<inner_t>(m_impl);
     }
 
-    const auto& inner() const
+    const auto& inner() const noexcept
     {
         return std::get<inner_t>(m_impl);
     }
 
-    bool is_inner() const
+    bool is_inner() const noexcept
     {
         return std::get_if<inner_t>(&m_impl) != nullptr;
     }
 
-    auto& collision()
+    auto& collision() noexcept
     {
         return std::get<collision_t>(m_impl);
     }
 
-    const auto& collision() const
+    const auto& collision() const noexcept
     {
         return std::get<collision_t>(m_impl);
     }
 
-    auto datamap() const
+    auto datamap() const noexcept
     {
         return inner().datamap;
     }
 
-    auto nodemap() const
+    auto nodemap() const noexcept
     {
         return inner().nodemap;
     }
 
-    auto data() const
+    auto data() const noexcept
     {
         return inner().data;
     }
 
-    auto children() const
+    auto children() const noexcept
     {
         return inner().children;
     }
 
-    auto collision_data() const
+    auto collision_data() const noexcept
     {
         return collision().data;
     }
 
-    auto data_size() const
+    auto data_size() const noexcept
     {
         return popcount(datamap());
     }
 
-    auto children_size() const
+    auto children_size() const noexcept
     {
         return popcount(nodemap());
     }
 
-    auto collision_size() const
+    auto collision_size() const noexcept
     {
         return collision().size;
     }
 
-    static void inc_children(hamt_node** first, hamt_node** last)
+    static void inc_children(hamt_node** first, hamt_node** last) noexcept
     {
         for (; first < last; ++first)
         {
@@ -214,7 +214,7 @@ struct hamt_node : public refcounted
 
         return dest;
     }
-    
+
     hamt_node* shallow_copy() const
     {
         if (is_inner())
@@ -438,7 +438,7 @@ struct hamt_node : public refcounted
         return dest;
     }
 
-    bool operator==(const hamt_node& other) const
+    bool operator==(const hamt_node& other) const  noexcept
     {
         if (is_inner())
         {
@@ -505,7 +505,7 @@ struct hamt_node : public refcounted
             }
         }
 
-        return true; 
+        return true;
     }
 
     hamt_node* merge(

@@ -185,7 +185,7 @@ TEST(immutable_map, basic_set)
         }
 
         set = [new_map](int value)
-        { 
+        {
             return new_map.set(value, value);
         };
     }
@@ -272,4 +272,58 @@ TEST(immutable_map, collision_erase)
     }
 
     ASSERT_EQ(m.size(), 0u);
+}
+
+//
+// Immutable map iterator tests.
+//
+
+TEST(immutable_map, iterator_common_function)
+{
+    map<int, int> a;
+
+    ASSERT_TRUE(a.begin() == a.end());
+
+    a = a.set(0, 10);
+
+    ASSERT_TRUE(a.begin() == a.begin());
+    ASSERT_TRUE(a.begin() != a.end());
+    ASSERT_TRUE((*(a.begin())).first == 0);
+    ASSERT_TRUE((*(a.begin())).second == 10);
+    ASSERT_TRUE((++a.begin()) == a.end());
+}
+
+TEST(immutable_map, ranged_for_iteration)
+{
+    const int num_el = 64 * 64 * 64;
+    using map_t = map<int, int>;
+    map_t m;
+
+    for (int i = 0; i < num_el; ++i)
+    {
+        m = m.set(i, i);
+    }
+
+    int counter = 0;
+
+    for ([[maybe_unused]] auto p : m)
+    {
+        ++counter;
+    }
+
+    ASSERT_EQ(counter, num_el);
+}
+
+TEST(immutable_map, ranged_for_iteration_empty_map)
+{
+    using map_t = map<int, int>;
+    map_t m;
+
+    int counter = 0;
+    for ([[maybe_unused]] auto p : m)
+    {
+        ++counter;
+    }
+
+    ASSERT_EQ(counter, 0);
 }

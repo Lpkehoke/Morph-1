@@ -18,8 +18,8 @@ class task_wrapper : public tbb::task
     using on_task_end_t = std::function<void()>;
 
     task_wrapper(task_queue::task_t&& t, on_task_end_t&& cb)
-        : m_t(std::move(t))
-        , m_cb(std::move(cb))
+      : m_t(std::move(t))
+      , m_cb(std::move(cb))
     {}
 
     virtual tbb::task* execute() override;
@@ -49,8 +49,8 @@ tbb::task* task_wrapper::execute()
 struct task_queue::impl_t
 {
     impl_t(tbb::priority_t priority)
-        : m_is_busy(false)
-        , m_priority(priority)
+      : m_is_busy(false)
+      , m_priority(priority)
     {}
 
     void enqueue_task(task_t&& task);
