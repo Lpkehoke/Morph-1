@@ -78,6 +78,8 @@ typename Observable<Args...>::Disposable Observable<Args...>::subscribe(OnUpdate
 template <typename... Args>
 void Observable<Args...>::notify(Args... args) const
 {
+    Subscribers subscribers;
+
     m_mutex.lock();
     subscribers = m_subscribers;
     m_mutex.unlock();
