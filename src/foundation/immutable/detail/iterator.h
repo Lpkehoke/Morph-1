@@ -132,6 +132,10 @@ class Iterator
             }
         }
 
+        define_data(inner);
+    }
+
+    void define_data(bool inner) noexcept {
         if (inner)
         {
             m_this_data = (*m_way_to_root[m_current_depth])->data();

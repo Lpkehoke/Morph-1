@@ -78,13 +78,13 @@ typename Observable<Args...>::Disposable Observable<Args...>::subscribe(OnUpdate
 template <typename... Args>
 void Observable<Args...>::notify(Args... args) const
 {
-    Subscribers subscribers;
+    foundation::immutable::map<int, on_update_fn> temporary_queue;
 
     m_mutex.lock();
     subscribers = m_subscribers;
     m_mutex.unlock();
 
-    for (const auto& [i, f] : subscribers)
+    for (const auto& [i, f] : temporary_queue)
     {
         try
         {
