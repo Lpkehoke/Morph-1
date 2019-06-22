@@ -116,13 +116,31 @@ class Iterator
         }
     }
 
-    void discent() noexcept
+    void discent_and_define_data() noexcept
     {
         auto current_node = m_way_to_root[m_current_depth];
+        auto inner = (*current_node)->is_inner();
         while ((*current_node)->children_size())
         {
             current_node = (*current_node)->children();
             m_way_to_root[++m_current_depth] = current_node;
+            inner = (*current_node)->is_inner();
+
+            if (!inner)
+            {
+                break;
+            }
+        }
+
+        if (inner)
+        {
+            m_this_data = (*m_way_to_root[m_current_depth])->data();
+            m_last_data = m_this_data + (*m_way_to_root[m_current_depth])->data_size();
+        }
+        else
+        {
+            m_this_data = (*m_way_to_root[m_current_depth])->collision_data();
+            m_last_data = m_this_data + (*m_way_to_root[m_current_depth])->collision_size();
         }
     }
 
