@@ -88,7 +88,7 @@ void Observable<Args...>::notify(Args... args) const
     {
         try
         {
-            cb.second(args...);
+            f(args...);
         }
         catch(const std::exception&)
         {
