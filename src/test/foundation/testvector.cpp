@@ -32,7 +32,7 @@ TEST(vector2, sub)
 TEST(vector2, scalar_mult)
 {
     Vector2f a(2.0f, 1.0f);
-    float factor = 5.0f;
+    float    factor = 5.0f;
 
     auto res = Vector2f {10.0f, 5.0f};
 

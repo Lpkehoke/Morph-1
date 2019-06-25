@@ -116,7 +116,7 @@ class Iterator
         }
     }
 
-    void discent_and_define_data() noexcept
+    void descent_and_define_data() noexcept
     {
         auto current_node = m_way_to_root[m_current_depth];
         auto inner = (*current_node)->is_inner();
