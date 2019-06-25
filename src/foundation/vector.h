@@ -51,7 +51,7 @@ T dot_product(const Vector<Dimensions, T>& lhs, const Vector<Dimensions, T>& rhs
 //
 
 //
-// Vector2 declaration
+// Vector2 declaration.
 //
 
 template <typename Element>
@@ -225,19 +225,13 @@ const T& Vector<2, T>::operator[](const std::size_t i) const noexcept
 template <typename T>
 T& Vector<2, T>::x() noexcept
 {
-    return m_data[0];
+    return m_data[i];
 }
 
 template <typename T>
-const T& Vector<2, T>::x() const noexcept
+const T& Vector<2, T>::operator[](const std::size_t& i) const noexcept
 {
-    return m_data[0];
-}
-
-template <typename T>
-T& Vector<2, T>::y() noexcept
-{
-    return m_data[1];
+    return m_data[i];
 }
 
 template <typename T>
@@ -314,13 +308,13 @@ Vector3<T> cross_product(const Vector3<T>& a, const Vector3<T>& b) noexcept
 }
 
 template <typename T>
-T scalar_product(const Vector2<T>& lhs, const Vector2<T>& rhs) noexcept
+const T& Vector<2, T>::y() const noexcept
 {
-    return (lhs.x() * rhs.x()) + (lhs.y() * rhs.y());
+    return m_data[1];
 }
 
 //
-// Vector3 declaration
+// Vector3 declaration.
 //
 
 template <typename Element>
@@ -330,6 +324,9 @@ class Vector<3, Element>
     static constexpr std::size_t dimensions = 3;
 
     Vector(Element x, Element y, Element z);
+
+    Element& operator[](const std::size_t& i) noexcept;
+    const Element& operator[](const std::size_t& i) const noexcept;
 
     Element& x() noexcept;
     const Element& x() const noexcept;
@@ -350,25 +347,7 @@ using Vector3 = Vector<3, Element>;
 using Vector3f = Vector3<float>;
 
 template <typename T>
-Vector3<T> operator+(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept;
-
-template <typename T>
-Vector3<T> operator-(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept;
-
-template <typename T>
-Vector3<T> operator*(const Vector3<T>& lhs, const T& rhs) noexcept;
-
-template <typename T>
-Vector3<T> operator-(const Vector3<T>& v) noexcept;
-
-template <typename T>
-bool operator==(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept;
-
-template <typename T>
-T scalar_product(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept;
-
-template <typename T>
-Vector3<T> vector_product(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept;
+Vector3<T> cross_product(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept;
 
 //
 //  Vector3 implementation.
@@ -378,6 +357,18 @@ template <typename T>
 Vector<3, T>::Vector(T x, T y, T z)
   : m_data{std::move(x), std::move(y), std::move(z)}
 {}
+
+template <typename T>
+T& Vector<3, T>::operator[](const std::size_t& i) noexcept
+{
+    return m_data[i];
+}
+
+template <typename T>
+const T& Vector<3, T>::operator[](const std::size_t& i) const noexcept
+{
+    return m_data[i];
+}
 
 template <typename T>
 T& Vector<3, T>::x() noexcept
@@ -416,43 +407,7 @@ const T& Vector<3, T>::z() const noexcept
 }
 
 template <typename T>
-Vector3<T> operator+(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept
-{
-    return Vector3<T> {lhs.x() + rhs.x(), lhs.y() + rhs.y(), lhs.z() + rhs.z()};
-}
-
-template <typename T>
-Vector3<T> operator-(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept
-{
-    return Vector3<T> {lhs.x() - rhs.x(), lhs.y() - rhs.y(), lhs.z() - rhs.z()};
-}
-
-template <typename T>
-Vector3<T> operator*(const Vector3<T>& lhs, const T& rhs) noexcept
-{
-    return Vector3<T> {lhs.x() * rhs, lhs.y() * rhs, lhs.z() * rhs};
-}
-
-template <typename T>
-Vector3<T> operator-(const Vector3<T>& v) noexcept
-{
-    return v * (-1.0f);
-}
-
-template <typename T>
-bool operator==(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept
-{
-    return (lhs.x() == rhs.x()) && (lhs.y() == rhs.y()) && (lhs.z() == rhs.z());
-}
-
-template <typename T>
-T scalar_product(const Vector3<T>& lhs, const Vector3<T>& rhs) noexcept
-{
-    return (lhs.x() * rhs.x()) + (lhs.y() * rhs.y()) + (lhs.z() * rhs.z());
-}
-
-template <typename T>
-Vector3<T> vector_product(const Vector3<T>& a, const Vector3<T>& b) noexcept
+Vector3<T> cross_product(const Vector3<T>& a, const Vector3<T>& b) noexcept
 {
     return Vector3<T> {
         (a.y() * b.z()) - (a.z() * b.y()),
