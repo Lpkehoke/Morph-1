@@ -277,10 +277,11 @@ TEST(immutable_map, collision_erase)
 //
 // Immutable map iterator tests.
 //
+using map_t = Map<int, int>;
 
 TEST(immutable_map, iterator_common_function)
 {
-    Map<int, int> a;
+    map_t a;
 
     ASSERT_TRUE(a.begin() == a.end());
 
@@ -295,9 +296,8 @@ TEST(immutable_map, iterator_common_function)
 
 TEST(immutable_map, ranged_for_iteration)
 {
-    const int num_el = 64 * 64 * 64;
-    using MapType = Map<int, int>;
-    MapType m;
+    constexpr int num_el = 64 * 64;
+    map_t m;
 
     for (int i = 0; i < num_el; ++i)
     {
@@ -316,8 +316,7 @@ TEST(immutable_map, ranged_for_iteration)
 
 TEST(immutable_map, ranged_for_iteration_empty_map)
 {
-    using MapType = Map<int, int>;
-    MapType m;
+    map_t m;
 
     int counter = 0;
     for ([[maybe_unused]] auto p : m)
@@ -326,4 +325,25 @@ TEST(immutable_map, ranged_for_iteration_empty_map)
     }
 
     ASSERT_EQ(counter, 0);
+}
+
+TEST(immutable_map, iterator_collision)
+{
+    constexpr int num_el = 64;
+    using map_t = Map<int, int, CollisionHash<int>>;
+    map_t m;
+
+    for (int i = 0; i < num_el; ++i)
+    {
+        m = m.set(i, i);
+    }
+
+    int counter = 0;
+
+    for ([[maybe_unused]] auto p : m)
+    {
+        ++counter;
+    }
+
+    ASSERT_EQ(counter, num_el);
 }

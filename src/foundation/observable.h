@@ -16,9 +16,9 @@ template <typename... Args>
 class Observable : public std::enable_shared_from_this<Observable<Args...>>
 {
   public:
-    using OnUpdateFn = std::function<void(Args...)>;
+    using OnUpdateFn      = std::function<void(Args...)>;
     using SubscriptionKey = std::uint64_t;
-    using Subscribers = foundation::immutable::Map<SubscriptionKey, OnUpdateFn>;
+    using Subscribers     = foundation::immutable::Map<SubscriptionKey, OnUpdateFn>;
 
     class Disposable
     {
@@ -80,10 +80,9 @@ void Observable<Args...>::notify(Args... args) const
 {
     Subscribers subscribers;
 
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        subscribers = m_subscribers;
-    }
+    m_mutex.lock();
+    subscribers = m_subscribers;
+    m_mutex.unlock();
 
     for (const auto& cb : subscribers)
     {

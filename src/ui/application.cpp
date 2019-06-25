@@ -2,7 +2,7 @@
 
 #include "vk/vkrenderer.h"
 
-#include "foundation/vecor.h" 
+#include "foundation/vector.h" 
 
 #include <SDL2/SDL.h>
 

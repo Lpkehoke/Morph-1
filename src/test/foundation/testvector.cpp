@@ -1,4 +1,4 @@
-#include "foundation/vecor.h"
+#include "foundation/vector.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
