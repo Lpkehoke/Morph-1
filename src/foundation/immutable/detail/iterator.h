@@ -148,38 +148,6 @@ class Iterator
         }
     }
 
-    void descent_and_define_data() noexcept
-    {
-        auto current_node = m_way_to_root[m_current_depth];
-        auto inner = (*current_node)->is_inner();
-        while ((*current_node)->children_size())
-        {
-            current_node = (*current_node)->children();
-            m_way_to_root[++m_current_depth] = current_node;
-            inner = (*current_node)->is_inner();
-
-            if (!inner)
-            {
-                break;
-            }
-        }
-
-        define_data(inner);
-    }
-
-    void define_data(bool inner) noexcept {
-        if (inner)
-        {
-            m_this_data = (*m_way_to_root[m_current_depth])->data();
-            m_last_data = m_this_data + (*m_way_to_root[m_current_depth])->data_size();
-        }
-        else
-        {
-            m_this_data = (*m_way_to_root[m_current_depth])->collision_data();
-            m_last_data = m_this_data + (*m_way_to_root[m_current_depth])->collision_size();
-        }
-    }
-
     bool can_i_shift() const
     {
         auto current_node = m_way_to_root[m_current_depth];
