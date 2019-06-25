@@ -5,10 +5,6 @@
 
 using namespace foundation;
 
-//
-// Vector2 tests
-//
-
 TEST(vector2, add)
 {
     Vector2f a(0.0f, 1.0f);
@@ -32,7 +28,7 @@ TEST(vector2, sub)
 TEST(vector2, scalar_mult)
 {
     Vector2f a(2.0f, 1.0f);
-    float    factor = 5.0f;
+    float factor = 5.0f;
 
     auto res = Vector2f {10.0f, 5.0f};
 
