@@ -84,11 +84,11 @@ void Observable<Args...>::notify(Args... args) const
     subscribers = m_subscribers;
     m_mutex.unlock();
 
-    for (const auto& cb : subscribers)
+    for (const auto& [i, f] : subscribers)
     {
         try
         {
-            cb.second(args...);
+            f(args...);
         }
         catch(const std::exception&)
         {
