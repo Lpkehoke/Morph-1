@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 using namespace foundation::immutable;
@@ -277,6 +278,7 @@ TEST(immutable_map, collision_erase)
 //
 // Immutable map iterator tests.
 //
+
 using map_t = Map<int, int>;
 
 TEST(immutable_map, iterator_common_function)
@@ -346,4 +348,43 @@ TEST(immutable_map, iterator_collision)
     }
 
     ASSERT_EQ(counter, num_el);
+}
+
+//
+// AnyTypeMap tests.
+//
+
+TEST(any_type_map, equal_value)
+{
+    AnyTypeMap<int> a;
+
+    for (int i = 0; i < 64; ++i)
+    {
+        a = a.set(i, i);
+    }
+
+    ASSERT_EQ(static_cast<int>(a.size()), 64);
+}
+
+TEST(any_type_map, simple_usage)
+{
+    AnyTypeMap<int> a;
+
+    a = a.set(0, 0);
+    a = a.set(1, true);
+    a = a.set(2, std::string("string"));
+    a = a.set(3, "string");
+
+    ASSERT_EQ(static_cast<int>(a.size()), 4);
+}
+
+TEST(any_type_map, get_data)
+{
+    AnyTypeMap<int> a;
+
+    a = a.set(0, 0);
+    a = a.set(1, true);
+
+    ASSERT_EQ((*a[0]).cast<int>(), 0);
+    ASSERT_EQ((*a[1]).cast<bool>(), true);
 }

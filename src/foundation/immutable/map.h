@@ -4,11 +4,13 @@
 #include "detail/iterator.h"
 #include "detail/hamtnode.h"
 
+#include "sharedany.h"
+
+#include <any>
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
 #include <utility>
-
 
 namespace foundation
 {
@@ -185,6 +187,13 @@ class Map
     Node*       m_root;
     std::size_t m_size;
 };
+
+
+template <typename Key,
+          typename Value = SharedAny,
+          typename Hash = std::hash<Key>,
+          typename MemoryPolicy = detail::HeapMemoryPolicy>
+using AnyTypeMap = Map<Key, Value, Hash, MemoryPolicy>;
 
 } // namespace immutable
 } // namespace foundation
