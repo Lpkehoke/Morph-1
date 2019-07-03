@@ -6,9 +6,9 @@
 
 #include "sharedany.h"
 
-#include <any>
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -17,11 +17,15 @@ namespace foundation
 namespace immutable
 {
 
+//
+// Map.
+//
+
 template <typename Key,
           typename Value,
           typename Hash = std::hash<Key>,
           typename MemoryPolicy = detail::HeapMemoryPolicy>
-class Map
+class Map final
 {
   public:
     static constexpr detail::CountType branches = 6u;
@@ -70,8 +74,8 @@ class Map
     }
 
     Map(const Map& other)
-        : m_root(other.m_root)
-        , m_size(other.m_size)
+      : m_root(other.m_root)
+      , m_size(other.m_size)
     {
         m_root->inc();
     }
@@ -169,6 +173,11 @@ class Map
         return *m_root == *other.m_root;
     }
 
+    bool operator!=(const Map& other) const noexcept
+    {
+        return !(*this == other);
+    }
+
     ~Map()
     {
         if (m_root && m_root->dec())
@@ -180,20 +189,71 @@ class Map
 
   private:
     Map(Node* root, std::size_t size)
-        : m_root(root)
-        , m_size(size)
+      : m_root(root)
+      , m_size(size)
     {}
 
     Node*       m_root;
     std::size_t m_size;
 };
 
+//
+// AnyTypeMap.
+//
 
 template <typename Key,
-          typename Value = SharedAny,
           typename Hash = std::hash<Key>,
           typename MemoryPolicy = detail::HeapMemoryPolicy>
-using AnyTypeMap = Map<Key, Value, Hash, MemoryPolicy>;
+class AnyTypeMap final
+{
+  public:
+    AnyTypeMap() = default;
+
+    AnyTypeMap set(Key key, SharedAny value)
+    {
+        return AnyTypeMap(m_map.set(std::move(key), std::move(value)));
+    }
+
+    std::size_t size() const noexcept
+    {
+        return m_map.size();
+    }
+
+    const SharedAny* get(const Key& key) const
+    {
+        return m_map.get(key);
+    }
+
+    const SharedAny* operator[](const Key& key) const
+    {
+        return m_map.get(key);
+    }
+
+    AnyTypeMap erase(const Key& key) const
+    {
+        return AnyTypeMap(m_map.erase(key));
+    }
+
+    template<typename ValueType>
+    std::shared_ptr<ValueType> getattr(const Key& key)
+    {
+        auto el = m_map.get(key);
+        if (el && el->type_info() == typeid(ValueType))
+        {
+            return ((*el).template cast<ValueType>());
+        }
+
+        return nullptr;
+    }
+
+  private:
+    using InnerMap = Map<Key, SharedAny, Hash, MemoryPolicy>;
+    AnyTypeMap(InnerMap&& m)
+    : m_map(std::move(m))
+    {}
+
+    InnerMap m_map;
+};
 
 } // namespace immutable
 } // namespace foundation

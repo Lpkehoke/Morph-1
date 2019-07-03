@@ -385,6 +385,42 @@ TEST(any_type_map, get_data)
     a = a.set(0, 0);
     a = a.set(1, true);
 
-    ASSERT_EQ((*a[0]).cast<int>(), 0);
-    ASSERT_EQ((*a[1]).cast<bool>(), true);
+    ASSERT_EQ(*a[0]->cast<int>(), 0);
+    ASSERT_EQ(*a[1]->cast<bool>(), true);
+}
+
+TEST(any_type_map, erase)
+{
+    AnyTypeMap<int> a;
+
+    a = a.set(0, 0);
+    ASSERT_EQ(static_cast<int>(a.size()), 1);
+    a = a.erase(0);
+    ASSERT_EQ(static_cast<int>(a.size()), 0);
+}
+
+TEST(any_type_map, getattr)
+{
+    AnyTypeMap<int> a;
+    a = a.set(0, 0);
+
+    ASSERT_EQ(*(a.getattr<int>(0)), 0);
+    ASSERT_EQ((a.getattr<bool>(0)), nullptr);
+}
+
+TEST(any_type_map, bad_cast)
+{
+    AnyTypeMap<int> a;
+
+    a = a.set(0, 0);
+
+    try
+    {
+        auto el = a[0]->cast<bool>();
+        ASSERT_TRUE(false);
+    }
+    catch (const std::bad_cast& ex)
+    {
+        ASSERT_EQ(static_cast<int>(a.size()), 1);
+    }
 }
