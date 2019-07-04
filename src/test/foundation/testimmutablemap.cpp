@@ -1,4 +1,5 @@
 #include "foundation/immutable/map.h"
+#include "foundation/immutable/anytypemap.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -413,14 +414,5 @@ TEST(any_type_map, bad_cast)
     AnyTypeMap<int> a;
 
     a = a.set(0, 0);
-
-    try
-    {
-        auto el = a[0]->cast<bool>();
-        ASSERT_TRUE(false);
-    }
-    catch (const std::bad_cast& ex)
-    {
-        ASSERT_EQ(static_cast<int>(a.size()), 1);
-    }
+    ASSERT_THROW(a[0]->cast<bool>(), std::bad_cast);
 }

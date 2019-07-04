@@ -2,26 +2,26 @@
 
 #include <memory>
 #include <type_traits>
-#include <typeinfo>
+#include <typeindex>
 
 namespace foundation
 {
 namespace immutable
 {
 
-class SharedAny final
+class SharedAny
 {
   public:
     template<typename ValueType>
     SharedAny(ValueType&& value)
       : m_data(new std::decay_t<ValueType>(std::forward<ValueType>(value)))
-      , m_type(typeid(value))
+      , m_type(std::type_index(typeid(ValueType)).hash_code())
     {}
 
     template<typename ValueType>
     std::shared_ptr<ValueType> cast() const
     {
-        if (typeid(ValueType) != m_type)
+        if (std::type_index(typeid(ValueType)).hash_code() != m_type)
         {
             throw std::bad_cast();
         }
@@ -31,14 +31,20 @@ class SharedAny final
         }
     }
 
-    const std::type_info& type_info() const noexcept
+    std::size_t type_info() const noexcept
 	{
 		return m_type;
 	}
 
+    template<typename ValueType>
+    bool is() const noexcept
+    {
+        return std::type_index(typeid(ValueType)).hash_code() == m_type;
+    }
+
   private:
-    std::shared_ptr<void> m_data;
-    const std::type_info& m_type;
+    std::shared_ptr<void>  m_data;
+    const std::size_t      m_type;
 };
 
 } // namespace immutable
