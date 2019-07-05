@@ -1,6 +1,6 @@
 #pragma once
 
-#include "foundation/immutable/sharedany.h"
+#include "foundation/sharedany.h"
 
 #include <utility>
 #include <cstddef>
