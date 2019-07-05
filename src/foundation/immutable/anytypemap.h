@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sharedany.h"
+#include "foundation/immutable/sharedany.h"
 
 #include <utility>
 #include <cstddef>
@@ -18,6 +18,8 @@ template <typename Key,
 class AnyTypeMap
 {
   public:
+    using InnerMap = Map<Key, SharedAny, Hash, MemoryPolicy>;
+
     AnyTypeMap() = default;
 
     AnyTypeMap set(Key key, SharedAny value)
@@ -49,16 +51,15 @@ class AnyTypeMap
     std::shared_ptr<ValueType> getattr(const Key& key)
     {
         auto el = m_map.get(key);
-        if (el && (*el).template is<ValueType>())
+        if (el && el->template is<ValueType>())
         {
-            return ((*el).template cast<ValueType>());
+            return (el->template cast<ValueType>());
         }
 
         return nullptr;
     }
 
   private:
-    using InnerMap = Map<Key, SharedAny, Hash, MemoryPolicy>;
     AnyTypeMap(InnerMap&& m)
       : m_map(std::move(m))
     {}

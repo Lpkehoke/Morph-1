@@ -31,15 +31,10 @@ class SharedAny
         }
     }
 
-    std::size_t type_info() const noexcept
-	{
-		return m_type;
-	}
-
     template<typename ValueType>
     bool is() const noexcept
     {
-        return std::type_index(typeid(ValueType)).hash_code() == m_type;
+        return typeid(ValueType).hash_code() == m_type;
     }
 
   private:
