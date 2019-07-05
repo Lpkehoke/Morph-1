@@ -15,13 +15,13 @@ class SharedAny
     template<typename ValueType>
     SharedAny(ValueType&& value)
       : m_data(new std::decay_t<ValueType>(std::forward<ValueType>(value)))
-      , m_type(std::type_index(typeid(ValueType)).hash_code())
+      , m_type(typeid(ValueType).hash_code())
     {}
 
     template<typename ValueType>
     std::shared_ptr<ValueType> cast() const
     {
-        if (std::type_index(typeid(ValueType)).hash_code() != m_type)
+        if (typeid(ValueType).hash_code() != m_type)
         {
             throw std::bad_cast();
         }
