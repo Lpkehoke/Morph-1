@@ -1,5 +1,7 @@
 #pragma once
 
+#include "foundation/immutable/detail/memorypolicy.h"
+#include "foundation/immutable/map.h"
 #include "foundation/sharedany.h"
 
 #include <utility>
