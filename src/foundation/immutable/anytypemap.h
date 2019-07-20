@@ -53,9 +53,9 @@ class AnyTypeMap
     std::shared_ptr<ValueType> getattr(const Key& key)
     {
         auto el = m_map.get(key);
-        if (el && el->template is<ValueType>())
+        if (el && el->template pure_is<ValueType>())
         {
-            return (el->template cast<ValueType>());
+            return (el->template pure_cast<ValueType>());
         }
 
         return nullptr;
